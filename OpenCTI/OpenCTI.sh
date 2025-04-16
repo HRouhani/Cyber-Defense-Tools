@@ -1,8 +1,9 @@
 #!/bin/bash                                                                                                                                                                             
                                                                                                                                                                                         
-set -e  # Exit on error                                                                                                                                                                 
+set -e                                                                                                                                                               
                                                                                                                                                                                         
-### CONFIG ###                                                                                                                                                                          
+# CONFIG ########################################################
+
 INSTALL_DIR="/opt/openCTI"                                                                                                                                                              
 DOCKER_REPO="https://github.com/OpenCTI-Platform/docker.git"                                                                                                                            
 ENV_FILE="$INSTALL_DIR/docker/.env"                                                                                                                                                     
@@ -11,7 +12,7 @@ SYSTEM_RABBIT_CONF_DIR="/etc/rabbitmq"
 SYSTEM_RABBIT_CONF_FILE="$SYSTEM_RABBIT_CONF_DIR/rabbitmq.conf"                                                                                                                         
 OPENCTI_PUBLIC_IP="54.158.175.39"                                                                                                                                                       
                                                                                                                                                                                         
-### INSTALL DEPENDENCIES ###                                                                                                                                                            
+# INSTALL DEPENDENCIES  #########################################                                                                                                                                                      
 echo "[+] Updating system and installing Docker dependencies..."                                                                                                                        
 sudo apt update && sudo apt install -y \                                                                                                                                                
   docker.io \                                                                                                                                                                           
@@ -23,25 +24,25 @@ sudo apt update && sudo apt install -y \
                                                                                                                                                                                         
 sudo systemctl enable docker && sudo systemctl start docker                                                                                                                             
                                                                                                                                                                                         
-### SETUP FOLDER STRUCTURE ###                                                                                                                                                          
+### SETUP FOLDER STRUCTURE ######################################                                                                                                                                                          
 echo "[+] Creating installation directory at $INSTALL_DIR..."                                                                                                                           
 sudo mkdir -p "$INSTALL_DIR"                                                                                                                                                            
 sudo chown "$USER:$USER" "$INSTALL_DIR"                                                                                                                                                 
                                                                                                                                                                                         
-### CLONE OPENCTI REPO ###                                                                                                                                                              
+### CLONE OPENCTI REPO #########################################                                                                                                                                                             
 echo "[+] Cloning OpenCTI Docker repository to $INSTALL_DIR..."                                                                                                                         
 git clone "$DOCKER_REPO" "$INSTALL_DIR/docker"     
 
-### MODIFY docker-compose.yml FOR RABBITMQ CONFIG PATH ###
+### MODIFY docker-compose.yml FOR RABBITMQ CONFIG PATH ######################
 echo "[+] Updating docker-compose.yml to use absolute path for RabbitMQ config..."
 sed -i "/rabbitmq:/,/restart:/ {/source:/s|source:.*|source: /opt/openCTI/docker/rabbitmq.conf|}" "$INSTALL_DIR/docker/docker-compose.yml"
 
-### SET KERNEL PARAM FOR ELASTICSEARCH ###
+### SET KERNEL PARAM FOR ELASTICSEARCH #############################################
 echo "[+] Setting vm.max_map_count..."
 echo "vm.max_map_count=1048575" | sudo tee -a /etc/sysctl.conf
 sudo sysctl -w vm.max_map_count=1048575
 
-### CREATE .env FILE ###
+### CREATE .env FILE ###########################################
 echo "[+] Creating .env file..."
 cat <<EOF > "$ENV_FILE"
 OPENCTI_ADMIN_EMAIL=admin@hrouhani.org
@@ -64,7 +65,7 @@ CONNECTOR_ANALYSIS_ID=55b7849d-adfe-450f-9ef0-51fea9d9049a
 SMTP_HOSTNAME=localhost
 EOF
 
-### CREATE RabbitMQ CONFIG FILES ###
+# CREATE RabbitMQ CONFIG FILES #########################################
 echo "[+] Creating RabbitMQ config file in project and system directories..."
 sudo mkdir -p "$SYSTEM_RABBIT_CONF_DIR"
 cat <<EOF | sudo tee "$RABBIT_CONF_FILE" "$SYSTEM_RABBIT_CONF_FILE"
@@ -72,7 +73,7 @@ max_message_size = 536870912
 consumer_timeout = 86400000
 EOF
 
-### START OPENCTI ###
+# START OPENCTI ##########################################################
 echo "[+] Starting OpenCTI with Docker Compose..."
 cd "$INSTALL_DIR/docker"
 docker-compose up -d
