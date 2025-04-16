@@ -22,6 +22,7 @@ You’ll find step-by-step examples for the most widely used and valuable threat
 
 Add this to your docker-compose.yml file (at the end):
 
+```yaml
 connector-virustotal-livehunt-notifications:
     image: opencti/connector-virustotal-livehunt-notifications:6.6.4
     environment:
@@ -48,7 +49,7 @@ connector-virustotal-livehunt-notifications:
     depends_on:
       opencti:
         condition: service_healthy
-
+```
 
 Change only the VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_API_KEY value.
 Then run:
@@ -62,7 +63,7 @@ docker-compose up -d
 
    https://otx.alienvault.com/logout
 
-
+```yaml
     connector-alienvault:                                                                                                                                                                 
     image: opencti/connector-alienvault:6.6.4                                                                                                                                           
     environment:
@@ -100,7 +101,7 @@ docker-compose up -d
     depends_on:
       opencti:
         condition: service_healthy
-
+```
 
     Change ALIENVAULT_API_KEY and then:
 
@@ -109,7 +110,7 @@ docker-compose up -d
 
     3. MITRE ATT&CK (TTPs)
 
-
+```yaml
       connector-mitre:
     image: opencti/connector-mitre:6.6.4
     environment:
@@ -126,7 +127,7 @@ docker-compose up -d
     depends_on:
       opencti:
         condition: service_healthy
-
+```
 
    Nothing to change here unless you want to tweak the sync interval or give it a different connector ID.
 
