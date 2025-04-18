@@ -11,7 +11,7 @@ ENV_FILE="$INSTALL_DIR/docker/.env"
 RABBIT_CONF_FILE="$INSTALL_DIR/docker/rabbitmq.conf"                                                                                                                                    
 SYSTEM_RABBIT_CONF_DIR="/etc/rabbitmq"                                                                                                                                                  
 SYSTEM_RABBIT_CONF_FILE="$SYSTEM_RABBIT_CONF_DIR/rabbitmq.conf"                                                                                                                         
-OPENCTI_PUBLIC_IP="54.158.175.39"                                                                                                                                                       
+#OPENCTI_PUBLIC_IP="54.158.175.39"
                                                                                                                                                                                         
 # INSTALL DEPENDENCIES  #########################################                                                                                                                                                      
 echo "[+] Updating system and installing Docker dependencies..."  
@@ -52,13 +52,14 @@ cat <<EOF > "$ENV_FILE"
 OPENCTI_ADMIN_EMAIL=admin@hrouhani.org
 OPENCTI_ADMIN_PASSWORD=hrouhani@OpenCTI-110
 OPENCTI_ADMIN_TOKEN=c75a53e7-c3eb-4410-a27a-2cc33c58c9de
-OPENCTI_BASE_URL=http://$OPENCTI_PUBLIC_IP:8080
+#OPENCTI_BASE_URL=http://$OPENCTI_PUBLIC_IP:8080
+OPENCTI_BASE_URL=http://localhost:8080
 OPENCTI_HEALTHCHECK_ACCESS_KEY=32ddca9b-0cc3-4db0-a917-808ee7825487
 MINIO_ROOT_USER=5a6f3c20-ea2d-4d63-ac0d-abd9eb3b225d
 MINIO_ROOT_PASSWORD=bcf6a855-78d2-4fba-b2f7-c08e035943ce
 RABBITMQ_DEFAULT_USER=guest
 RABBITMQ_DEFAULT_PASS=guest
-ELASTIC_MEMORY_SIZE=6G
+ELASTIC_MEMORY_SIZE=12G
 CONNECTOR_HISTORY_ID=c35edae1-09d7-4e9c-9305-ffe3feddad77
 CONNECTOR_EXPORT_FILE_STIX_ID=35c381b8-88e4-4398-a514-51a726cf1a6a
 CONNECTOR_EXPORT_FILE_CSV_ID=25fa888b-0885-4a03-9693-940a852d01f8
@@ -84,3 +85,56 @@ docker-compose up -d
 
 echo "[✓] OpenCTI is deployed and reachable at: http://$OPENCTI_PUBLIC_IP:8080"
 
+
+sleep 60
+
+
+# Create add_connectors.sh inside /opt/openCTI/docker
+cat << 'EOF' > /opt/openCTI/docker/add_connectors.sh
+#!/bin/bash
+set -e
+
+COMPOSE_FILE="/opt/openCTI/docker/docker-compose.yml"
+MITRE_BLOCK="
+  connector-mitre:
+    image: opencti/connector-mitre:6.6.4
+    environment:
+      - OPENCTI_URL=http://opencti:8080
+      - OPENCTI_TOKEN=\${OPENCTI_ADMIN_TOKEN}
+      - CONNECTOR_ID=mitre-connector
+      - CONNECTOR_NAME=MITRE ATT&CK
+      - CONNECTOR_SCOPE=tool,report,malware,identity,campaign,intrusion-set,attack-pattern,course-of-action,x-mitre-data-source,x-mitre-data-component,x-mitre-matrix,x-mitre-tactic,x-mitre-collection
+      - CONNECTOR_RUN_AND_TERMINATE=false
+      - CONNECTOR_LOG_LEVEL=error
+      - MITRE_REMOVE_STATEMENT_MARKING=true
+      - MITRE_INTERVAL=7
+    restart: always
+    depends_on:
+      opencti:
+        condition: service_healthy
+"
+
+echo "[+] Adding MITRE connector to docker-compose.yml..."
+
+# Skip if already added
+if grep -q "connector-mitre:" "$COMPOSE_FILE"; then
+  echo "[i] MITRE connector already exists. Skipping..."
+else
+  awk -v block="$MITRE_BLOCK" '
+    BEGIN { printed=0 }
+    /^volumes:/ && !printed {
+      print block
+      printed=1
+    }
+    { print }
+  ' "$COMPOSE_FILE" > "${COMPOSE_FILE}.tmp" && mv "${COMPOSE_FILE}.tmp" "$COMPOSE_FILE"
+  echo "[+] MITRE connector added."
+fi
+
+echo "[+] Restarting OpenCTI with new connector..."
+cd /opt/openCTI/docker
+docker-compose up -d
+EOF
+
+chmod +x /opt/openCTI/docker/add_connectors.sh
+bash /opt/openCTI/docker/add_connectors.sh
