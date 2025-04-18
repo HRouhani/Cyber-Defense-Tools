@@ -10,7 +10,7 @@ ENV_FILE="$INSTALL_DIR/docker/.env"
 RABBIT_CONF_FILE="$INSTALL_DIR/docker/rabbitmq.conf"                                                                                                                                    
 SYSTEM_RABBIT_CONF_DIR="/etc/rabbitmq"                                                                                                                                                  
 SYSTEM_RABBIT_CONF_FILE="$SYSTEM_RABBIT_CONF_DIR/rabbitmq.conf"                                                                                                                         
-OPENCTI_PUBLIC_IP="54.158.175.39"                                                                                                                                                       
+OPENCTI_PUBLIC_IP="Fill-me-IP-address"                                                                                                                                                       
                                                                                                                                                                                         
 # INSTALL DEPENDENCIES  #########################################                                                                                                                                                      
 echo "[+] Updating system and installing Docker dependencies..."                                                                                                                        
