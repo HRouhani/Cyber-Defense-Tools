@@ -111,7 +111,7 @@ docker-compose up -d
     3. MITRE ATT&CK (TTPs)
 
 ```yaml
-      connector-mitre:
+connector-mitre:
     image: opencti/connector-mitre:6.6.4
     environment:
       - OPENCTI_URL=http://opencti:8080
