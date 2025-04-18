@@ -1,1 +1,6 @@
 api.txt
+Terraform/terraform.tfstate
+Terraform/terraform.*
+Terraform/terraform.tfstate
+Terraform/.terraform*
+Terraform/opencti_key.pem
