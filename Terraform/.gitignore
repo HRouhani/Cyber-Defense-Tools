@@ -1,5 +1,0 @@
-terraform.tfstate
-terraform.*
-terraform.tfstate
-.terraform*
-opencti_key.pem
