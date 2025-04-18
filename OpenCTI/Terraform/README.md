@@ -75,3 +75,13 @@ Notes:
 
     docker-compose down -v && docker-compose up -d
     ```
+
+
+### 4. username & password
+
+ ```bash
+Username=admin@hrouhani.org
+Password=hrouhani@OpenCTI-110
+``` 
+
+You can change it in opencti.sh file!
