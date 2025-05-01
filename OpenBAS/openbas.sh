@@ -103,7 +103,7 @@ echo "[+] Starting OpenBAS and Caldera stack..."
 cd "$INSTALL_DIR/docker"
 
 # To install only OpenBAS
-docker-compose up -d
+#docker-compose up -d
 
 
 # Install OpenBAS together with Caldera
