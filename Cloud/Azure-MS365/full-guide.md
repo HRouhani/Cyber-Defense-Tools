@@ -54,7 +54,7 @@ Integrate the following Microsoft 365/Azure services with SIEM solution:
 - **Compliance**: Central audit trail of all user/admin activity—critical for GDPR, HIPAA, and SOX audits.
 - **Incident Response**: Reconstructs the sequence of actions performed by compromised accounts across Microsoft 365 services.
 
-###  Microsoft Defender for Cloud Apps (MDCA)
+###  Microsoft Defender for Cloud Apps (MDCA) --> outdate (need update)
 - **Threat Detection**: Detects anomalous cloud usage patterns like impossible travel, suspicious app consent, or mass downloads.
 - **Compliance**: Enforces and logs data protection policies (e.g., external sharing of sensitive files).
 - **Incident Response**: Correlates identity and app activities across cloud services to trace data misuse or exfiltration.
