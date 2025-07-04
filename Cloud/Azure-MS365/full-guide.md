@@ -1,3 +1,11 @@
+## Introduction
+
+This guide details how to integrate Microsoft 365 and Azure security logs into IBM QRadar for centralized threat detection, compliance monitoring, and incident response. It is intended for security analysts, cloud administrators, and SIEM engineers with access to:
+- An Azure subscription with Event Hub and Storage Account permissions
+- Microsoft 365 E5 or equivalent licenses (including Defender and Entra ID components)
+
+
+
 # Onboard Microsoft Logs into SIEM
 
 Collecting logs from Microsoft 365/Azure and its security subcomponents is essential for:
@@ -59,7 +67,9 @@ Organizations that rely on external SIEM platforms (e.g., IBM QRadar, Splunk, El
 
 - Methods for Sending Logs from Microsoft 365 to SIEM:
 
-    Method 1: Azure Event Hub (Streaming API) Near real-time log streaming from Microsoft security products.
+    Method 1: Azure Event Hub (Streaming API) 
+    
+    Near real-time log streaming from Microsoft security products.
     Ideal for high-volume security telemetry such as:
 
         - Azure AD (Entra ID) sign-in and audit logs
@@ -72,19 +82,47 @@ Organizations that rely on external SIEM platforms (e.g., IBM QRadar, Splunk, El
 
         - Microsoft Defender for Cloud Apps (MCAS)
 
-    Method 2: Office 365 Management Activity API (REST API)
-    Polling-based method used for audit, compliance, and productivity logs.
-    Required for services that do not support streaming, such as:
+    Method 2: Polling-Based APIs for Audit and Compliance Logs (REST API)
+    
+    Polling-based methods required for audit, compliance, and productivity logs that do not support streaming (5-30 minute latency).
 
-        Exchange Online (mailbox access)
+# Method 2A: Office 365 Management Activity API (REST API)
 
-        SharePoint Online (file access)
+Traditional method for retrieving audit and compliance logs. Supported as of July 2025 but being phased out for some workloads.
 
-        Microsoft Teams (team creation and activity logs)
+Log Types:
 
-        Microsoft Purview (DLP and compliance events)
 
-        Unified Audit Logs
+- Exchange Online (mailbox access)
+- SharePoint Online (file access)
+- Microsoft Teams (team creation and activity logs)
+- Microsoft Purview (DLP and compliance events)
+- Unified Audit Logs (consolidated user/admin activities)
+- Use Case: Compliance monitoring, user activity tracking, and audit reporting.
+
+Configuration: Requires app registration in the Microsoft Entra Admin Center or Azure Portal, with permissions like ActivityFeed.Read and ActivityFeed.ReadDlp.
+
+
+
+# Method 2B: Microsoft Graph Audit Logs API
+
+Newer alternative for audit and compliance logs, recommended for future compatibility as Microsoft transitions from the Office 365 Management API.
+
+Log Types:
+
+- Exchange Online (mailbox access)
+- SharePoint Online (file access)
+- Microsoft Teams (team creation and activity logs)
+- Microsoft Purview (DLP and compliance events)
+- Unified Audit Logs (via /auditLogs/directoryAudits and /auditLogs/signIns)
+
+
+Use Case: Same as Office 365 Management API, with improved performance and support for newer features.
+
+Configuration: Requires app registration in the Microsoft Entra Admin Center or Azure Portal, with the AuditLog.Read.All permission. Ensure QRadar’s Microsoft Office 365 DSM is updated to support Graph API.
+
+
+Important: As of July 2025, the Office 365 Management Activity API is supported, but Microsoft is transitioning some workloads to the Microsoft Graph Audit Logs API. Use Method 2B for new deployments or to prepare for future deprecation.
 
 Description and Purpose
 
@@ -403,42 +441,67 @@ Office 365 REST API Integration
 - Purview DLP & sensitivity label logs  
 - Admin activity and policy enforcement  
 
+**Important**: As of July 2025, the Office 365 Management Activity API is supported, but Microsoft is transitioning some workloads (e.g., Unified Audit Logs, Exchange, SharePoint activities) to the Microsoft Graph Audit Logs API. Both APIs are currently viable for integration, but prepare for Graph API adoption.
+
 ### Setup Steps
 
-1. Register app in Azure AD  
-   - Supported account types: Single tenant
+    We propose the second option to use the Graph API
 
-2. Generate:
-   - Client ID  
-   - Client Secret  
-   - Tenant ID  
- 
-3. Generate Client Secret
+#### Setup Steps (Office 365 Management Activity API)
+ **Register App in Microsoft Entra ID**
+   - In [Microsoft Entra Admin Center](https://entra.microsoft.com), go to **Applications > App Registrations > New Registration**.
+     - **Alternative**: Use the [Azure Portal](https://portal.azure.com) and navigate to **Azure Active Directory > App Registrations > New Registration**.
+   - Name: e.g., `QRadar-M365-Integration`
+   - Supported account types: **Accounts in this organizational directory only (Single tenant)**
+   - Note: Client ID, Tenant ID
+ **Generate Client Secret**
+   - In the same portal (Entra Admin Center or Azure Portal), go to **Certificates & secrets > New client secret**.
+   - Set expiry (e.g., 24 months) and copy the secret value immediately.
+ **Grant API Permissions**
+   - In **API permissions**, add **application** permissions:
+     - `ActivityFeed.Read`
+     - `ActivityFeed.ReadDlp`
+     - `ServiceHealth.Read`
+   - Click **Grant admin consent for <tenant>**.
+ **Configure SIEM (like splunk QRadar)**
+   - Add log source: **Microsoft Office 365**
+   - Protocol: **Office 365 REST API**
+   - Enter: Client ID, Client Secret, Tenant ID
+   - Select event filters: Azure AD, Exchange, SharePoint, General, DLP
+   - **Note**: API enforces rate limits; QRadar backs off on HTTP 429 errors.
 
-    - Go to the App > Certificates & secrets
-
-    - Click New client secret
-
-    - Choose expiry (e.g. 12 or 24 months)
-
-    - Copy the Secret Value
-
-Alternatively: Upload a certificate (PFX file) for cert-based auth
-
-4. Grant API permissions:
-   - `ActivityFeed.Read`  
-   - `ActivityFeed.ReadDlp`  
-   - `ServiceHealth.Read` 
-
-   Click Grant Admin Consent
+#### Setup Steps (Microsoft Graph Audit Logs API)
+**When to Use**: For organizations preparing for Microsoft’s transition or accessing newer audit log features.
+ **Register App in Microsoft Entra ID**
+   - In [Microsoft Entra Admin Center](https://entra.microsoft.com), go to **Applications > App Registrations > New Registration**.
+     - **Alternative**: Use the [Azure Portal](https://portal.azure.com) and navigate to **Azure Active Directory > App Registrations > New Registration**.
+   - Name: e.g., `QRadar-Graph-Audit`
+   - Supported account types: **Accounts in this organizational directory only (Single tenant)**
+   - Note: Client ID, Tenant ID
+ **Generate Client Secret**
+   - In **Certificates & secrets**, create a new secret (e.g., 24 months expiry).
+   - Copy the secret value.
+ **Grant API Permissions**
+   - Add **application** permission: `AuditLog.Read.All`
+   - Click **Grant admin consent for <tenant>**.
+ **Configure QRadar**
+   - Add log source: **Microsoft Office 365**
+   - Protocol: **Microsoft Graph API** (ensure QRadar DSM is updated to support Graph API).
+   - Enter: Client ID, Client Secret, Tenant ID
+   - Endpoint: `https://graph.microsoft.com/v1.0/auditLogs/directoryAudits` (for Entra ID) or `https://graph.microsoft.com/v1.0/auditLogs/signIns` (for sign-ins)
+   - **Note**: Check IBM QRadar DSM release notes for Graph API support and event parsing.
+ **Verification**
+   - Query the Graph API (e.g., `GET https://graph.microsoft.com/v1.0/auditLogs/directoryAudits`) using PowerShell or Postman.
+   - Confirm events in QRadar’s Log Activity tab under Microsoft Office 365 DSM.
 
 
 ### Required Network Access
 
-| Service          | Protocol | Port | Host                      | Purpose             |
-|------------------|----------|------|---------------------------|---------------------|
-| Azure AD OAuth   | HTTPS    | 443  | login.microsoftonline.com | Token exchange      |
-| Office 365 API   | HTTPS    | 443  | manage.office.com         | Audit data retrieval |
+| **Service**          | **Protocol** | **Port** | **Host**                      | **Purpose**             |
+|----------------------|--------------|----------|-------------------------------|-------------------------|
+| Azure AD OAuth       | HTTPS        | 443      | login.microsoftonline.com     | Token exchange          |
+| Office 365 API       | HTTPS        | 443      | manage.office.com             | Audit data retrieval    |
+| Microsoft Graph API  | HTTPS        | 443      | graph.microsoft.com           | Audit data retrieval    |
 
 
 
