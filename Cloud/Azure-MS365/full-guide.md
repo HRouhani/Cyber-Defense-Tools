@@ -1,8 +1,9 @@
 ## Introduction
 
-This guide details how to integrate Microsoft 365 and Azure security logs into IBM QRadar for centralized threat detection, compliance monitoring, and incident response. It is intended for security analysts, cloud administrators, and SIEM engineers with access to:
-- An Azure subscription with Event Hub and Storage Account permissions
-- Microsoft 365 E5 or equivalent licenses (including Defender and Entra ID components)
+This guide details how to integrate Microsoft 365 and Azure security logs into Siem (splunk, Qradar, ...) for centralized threat detection, compliance monitoring, and incident response. It is intended for security analysts, cloud administrators, and SIEM engineers with access to:
+
+    - An Azure subscription with Event Hub and Storage Account permissions
+    - Microsoft 365 E5 or equivalent licenses (including Defender and Entra ID components)
 
 
 
@@ -67,7 +68,7 @@ Organizations that rely on external SIEM platforms (e.g., IBM QRadar, Splunk, El
 
 - Methods for Sending Logs from Microsoft 365 to SIEM:
 
-    Method 1: Azure Event Hub (Streaming API) 
+    🔄 Method 1: Azure Event Hub (Streaming API) 
     
     Near real-time log streaming from Microsoft security products.
     Ideal for high-volume security telemetry such as:
@@ -82,55 +83,72 @@ Organizations that rely on external SIEM platforms (e.g., IBM QRadar, Splunk, El
 
         - Microsoft Defender for Cloud Apps (MCAS)
 
-    Method 2: Polling-Based APIs for Audit and Compliance Logs (REST API)
+    🔄 Method 2: Polling-Based APIs for Audit and Compliance Logs (REST API)
     
-    Polling-based methods required for audit, compliance, and productivity logs that do not support streaming (5-30 minute latency).
+    Some Microsoft 365 logs cannot be streamed via Event Hub and require polling-based APIs. These methods are used primarily for:
 
-# Method 2A: Office 365 Management Activity API (REST API)
+        - 📋 Audit logs
 
-Traditional method for retrieving audit and compliance logs. Supported as of July 2025 but being phased out for some workloads.
+        - ⚖️ Compliance data
 
-Log Types:
+        - 👤 User activity monitoring
 
+    ⏱️ Polling latency: typically 5–30 minutes
 
-- Exchange Online (mailbox access)
-- SharePoint Online (file access)
-- Microsoft Teams (team creation and activity logs)
-- Microsoft Purview (DLP and compliance events)
-- Unified Audit Logs (consolidated user/admin activities)
-- Use Case: Compliance monitoring, user activity tracking, and audit reporting.
-
-Configuration: Requires app registration in the Microsoft Entra Admin Center or Azure Portal, with permissions like ActivityFeed.Read and ActivityFeed.ReadDlp.
+    ✅ This method includes two REST API options:
 
 
+        # Method 2A: Office 365 Management Activity API (Legacy)
 
-# Method 2B: Microsoft Graph Audit Logs API
+        This is the traditional method for retrieving audit logs. Still supported in 2025, but Microsoft is gradually deprecating it in favor of the Graph API for some workloads.
 
-Newer alternative for audit and compliance logs, recommended for future compatibility as Microsoft transitions from the Office 365 Management API.
-
-Log Types:
-
-- Exchange Online (mailbox access)
-- SharePoint Online (file access)
-- Microsoft Teams (team creation and activity logs)
-- Microsoft Purview (DLP and compliance events)
-- Unified Audit Logs (via /auditLogs/directoryAudits and /auditLogs/signIns)
+        Log Types (sources):
 
 
-Use Case: Same as Office 365 Management API, with improved performance and support for newer features.
+        - Exchange Online (mailbox access)
+        - SharePoint Online (file access)
+        - Microsoft Teams (team creation and activity logs)
+        - Microsoft Purview (DLP and compliance events)
+        - Unified Audit Logs (consolidated user/admin activities)
+        - Use Case: Compliance monitoring, user activity tracking, and audit reporting.
 
-Configuration: Requires app registration in the Microsoft Entra Admin Center or Azure Portal, with the AuditLog.Read.All permission. Ensure QRadar’s Microsoft Office 365 DSM is updated to support Graph API.
+        Use Case:
+
+        Compliance monitoring, internal audits, forensic investigations.
+
+        Configuration:
+
+            - Register an Azure App (via Entra/Azure Portal)
+            - Assign permissions:
+
+                ActivityFeed.Read
+                ActivityFeed.ReadDlp
+
+            Grant admin consent
+            Configure in SIEM using the Office 365 REST API protocol
+
+
+
+        # Method 2B: Microsoft Graph Audit Logs API
+
+        The modern REST API approach using Microsoft Graph. Offers better performance, scalability, and future support.
+
+        Log Types:
+
+        - Exchange Online (mailbox access)
+        - SharePoint Online (file access)
+        - Microsoft Teams (team creation and activity logs)
+        - Microsoft Purview (DLP and compliance events)
+        - Unified Audit Logs (via /auditLogs/directoryAudits and /auditLogs/signIns)
+
+
+        Use Case: Same as Office 365 Management API, with improved performance and support for newer features.
+
+        Configuration: Requires app registration in the Microsoft Entra Admin Center or Azure Portal, with the AuditLog.Read.All permission. Ensure SIEM part like Microsoft Office 365 DSM in Qradar is updated to support Graph API.
 
 
 Important: As of July 2025, the Office 365 Management Activity API is supported, but Microsoft is transitioning some workloads to the Microsoft Graph Audit Logs API. Use Method 2B for new deployments or to prepare for future deprecation.
 
-Description and Purpose
-
-    Azure Event Hub Streaming
-    Uses Diagnostic Settings or the Defender Streaming API to stream logs to an Azure Event Hub, from which an external SIEM can pull logs in near real-time. This method is preferred for detecting threats and responding quickly to incidents with rich JSON telemetry.
-
-    Office 365 REST API
-    Microsoft 365 provides a REST API that exposes the Unified Audit Log. This method is required for audit trails and compliance monitoring, especially for services that cannot send events to Event Hub.
 
 ---
 
