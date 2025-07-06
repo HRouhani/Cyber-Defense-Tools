@@ -1,6 +1,6 @@
 # 🛡️ Guide: Integrating Microsoft Defender (XDR) Security Logs into SIEM
 
-- Focus: Microsoft 365 Defender components accessible via https://security.microsoft.com
+- Focus: Microsoft Defender (XDR) components accessible via https://security.microsoft.com
 - 📌 A separate guide will cover Microsoft Defender for Cloud, accessible via https://portal.azure.com
 
 
