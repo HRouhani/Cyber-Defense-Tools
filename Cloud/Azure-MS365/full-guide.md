@@ -639,18 +639,39 @@ Network Requirements
 
 
 
-### Microsoft Services → Event Hub Setup
+## 5️⃣ Microsoft Defender Services → Event Hub Setup
 
-#### Microsoft Entra ID (Azure AD)
-- Navigate to [https://entra.microsoft.com](https://entra.microsoft.com)
-- Go to `Monitoring > Diagnostic Settings`
-- Click **+ Add Diagnostic Setting**
-  - Name: `aad-to-eventhub`
-  - Enable: `AuditLogs`, `SignInLogs`
-  - Choose: `Stream to Event Hub`
-  - Select your Event Hub namespace and Event Hub
+Once your **Azure Event Hub** is configured, you can stream Microsoft Defender XDR logs in real time to your SIEM (e.g., QRadar or Splunk).
 
-##### CLI:
+This section explains how to connect the following Defender services:
+
+- Microsoft Entra ID (Azure AD)
+- Microsoft Defender for Endpoint (MDE)
+- Microsoft Defender for Identity (MDI)
+- Microsoft Defender for Office 365 (MDO)
+- Microsoft Defender for Cloud Apps (MDCA)
+
+---
+
+### 🔐 Microsoft Entra ID (Azure AD)
+
+Enables forwarding of sign-in and audit logs.
+
+#### Via Azure Portal
+
+1. Go to [https://entra.microsoft.com](https://entra.microsoft.com)
+2. Navigate to:  
+   `Monitoring > Diagnostic Settings`
+3. Click **+ Add Diagnostic Setting**
+4. Enter a name (e.g., `aad-to-eventhub`)
+5. Enable log categories:
+   - `SignInLogs`
+   - `AuditLogs`
+6. Select **Stream to an Event Hub**
+7. Choose your **Namespace** and **Event Hub**
+
+#### Via Azure CLI
+
 ```bash
 az monitor diagnostic-settings create \
   --resource <AADResourceID> \
@@ -659,43 +680,50 @@ az monitor diagnostic-settings create \
   --event-hub-authorization-rule-id <SASRuleID> \
   --event-hub-namespace psiem-namespace \
   --logs '[{"category":"AuditLogs","enabled":true},{"category":"SignInLogs","enabled":true}]'
-  ```
+```
 
 
-🔹 Microsoft Defender (MDE, MDI, MDO)
+### 🛡️ Microsoft Defender for Endpoint (MDE), Identity (MDI), and Office 365 (MDO)
 
-    Go to https://security.microsoft.com
+These Microsoft Defender XDR components support **real-time log export** to Azure Event Hub via the **Microsoft 365 Defender Streaming API**.
 
-    Navigate to Settings > Microsoft 365 Defender > Streaming API
+---
 
-    Click Add Data Export
+#### Via Microsoft 365 Defender Portal
 
-        Name: defender-to-eventhub
+1. Go to [https://security.microsoft.com](https://security.microsoft.com)
 
-        Choose: Forward events to Event Hub
+2. Navigate to:  
+   `Settings > Microsoft 365 Defender > Streaming API`
 
-        Enter: Event Hub Namespace Resource ID & Name
+3. Click **Add Data Export**
 
-        Select tables: DeviceEvents, AlertInfo, EmailEvents, etc.
+4. Fill in the following fields:
+   - **Name**: e.g., `defender-to-eventhub`
+   - **Destination**: Stream to Event Hub
+   - **Event Hub Namespace Resource ID**
+   - **Event Hub Name**: e.g., `security-logs-hub`
 
-🔹 Defender for Cloud Apps (MCAS)
+5. Select telemetry tables to stream:
+   - `DeviceEvents`
+   - `DeviceNetworkEvents`
+   - `DeviceFileEvents`
+   - `DeviceProcessEvents`
+   - `AlertInfo`
+   - `AlertEvidence`
+   - `EmailEvents`
+   - `EmailUrlInfo`
+   - `EmailAttachmentInfo`
 
-    Go to: https://portal.cloudappsecurity.com
-
-    Navigate to Settings > Security Extensions > SIEM
-
-    Choose: Send alerts to Event Hub
-
-        Enter: Event Hub Namespace, Name, and SAS token
+✅ **Tip**: Only select the tables you actually need to reduce data volume and optimize SIEM ingestion cost.
 
 
 
 
 
+## B. Office 365 REST API / Microsoft Graph Audit Logs API
 
-## B. Office 365 REST API
-
-Office 365 REST API Integration
+This section explains how to ingest audit and compliance logs from Microsoft Defender into your SIEM using either the legacy **Office 365 Management Activity API** or the modern **Microsoft Graph Audit Logs API**.
 
 ### What It Covers
 
@@ -705,56 +733,104 @@ Office 365 REST API Integration
 
 **Important**: As of July 2025, the Office 365 Management Activity API is supported, but Microsoft is transitioning some workloads (e.g., Unified Audit Logs, Exchange, SharePoint activities) to the Microsoft Graph Audit Logs API. Both APIs are currently viable for integration, but prepare for Graph API adoption.
 
-### Setup Steps
+---
 
-    We propose the second option to use the Graph API
+## 1️⃣ Setup with Office 365 Management Activity API (Legacy)
 
-#### Setup Steps (Office 365 Management Activity API)
- **Register App in Microsoft Entra ID**
-   - In [Microsoft Entra Admin Center](https://entra.microsoft.com), go to **Applications > App Registrations > New Registration**.
-     - **Alternative**: Use the [Azure Portal](https://portal.azure.com) and navigate to **Azure Active Directory > App Registrations > New Registration**.
-   - Name: e.g., `QRadar-M365-Integration`
-   - Supported account types: **Accounts in this organizational directory only (Single tenant)**
-   - Note: Client ID, Tenant ID
- **Generate Client Secret**
-   - In the same portal (Entra Admin Center or Azure Portal), go to **Certificates & secrets > New client secret**.
-   - Set expiry (e.g., 24 months) and copy the secret value immediately.
- **Grant API Permissions**
-   - In **API permissions**, add **application** permissions:
-     - `ActivityFeed.Read`
-     - `ActivityFeed.ReadDlp`
-     - `ServiceHealth.Read`
-   - Click **Grant admin consent for <tenant>**.
- **Configure SIEM (like splunk QRadar)**
-   - Add log source: **Microsoft Office 365**
-   - Protocol: **Office 365 REST API**
-   - Enter: Client ID, Client Secret, Tenant ID
-   - Select event filters: Azure AD, Exchange, SharePoint, General, DLP
-   - **Note**: API enforces rate limits; QRadar backs off on HTTP 429 errors.
+> Suitable for backward compatibility or SIEMs that do not yet support Microsoft Graph.
 
-#### Setup Steps (Microsoft Graph Audit Logs API)
-**When to Use**: For organizations preparing for Microsoft’s transition or accessing newer audit log features.
- **Register App in Microsoft Entra ID**
-   - In [Microsoft Entra Admin Center](https://entra.microsoft.com), go to **Applications > App Registrations > New Registration**.
-     - **Alternative**: Use the [Azure Portal](https://portal.azure.com) and navigate to **Azure Active Directory > App Registrations > New Registration**.
-   - Name: e.g., `QRadar-Graph-Audit`
-   - Supported account types: **Accounts in this organizational directory only (Single tenant)**
-   - Note: Client ID, Tenant ID
- **Generate Client Secret**
-   - In **Certificates & secrets**, create a new secret (e.g., 24 months expiry).
-   - Copy the secret value.
- **Grant API Permissions**
-   - Add **application** permission: `AuditLog.Read.All`
-   - Click **Grant admin consent for <tenant>**.
- **Configure QRadar**
-   - Add log source: **Microsoft Office 365**
-   - Protocol: **Microsoft Graph API** (ensure QRadar DSM is updated to support Graph API).
-   - Enter: Client ID, Client Secret, Tenant ID
-   - Endpoint: `https://graph.microsoft.com/v1.0/auditLogs/directoryAudits` (for Entra ID) or `https://graph.microsoft.com/v1.0/auditLogs/signIns` (for sign-ins)
-   - **Note**: Check IBM QRadar DSM release notes for Graph API support and event parsing.
- **Verification**
-   - Query the Graph API (e.g., `GET https://graph.microsoft.com/v1.0/auditLogs/directoryAudits`) using PowerShell or Postman.
-   - Confirm events in QRadar’s Log Activity tab under Microsoft Office 365 DSM.
+### Step-by-Step
+
+#### ✅ Register an App in Microsoft Entra ID
+
+- Go to [Microsoft Entra Admin Center](https://entra.microsoft.com)
+- Navigate to: `Applications > App registrations > New registration`
+- Alternative: Use [Azure Portal](https://portal.azure.com) under `Azure Active Directory`
+- Fill in:
+  - **Name**: `QRadar-M365-Integration`
+  - **Supported account types**: *Single tenant*
+  - Save the **Client ID** and **Tenant ID**
+
+#### 🔐 Generate Client Secret
+
+- Navigate to: `Certificates & secrets > New client secret`
+- Choose an expiry (e.g., 24 months)
+- Copy and store the secret value immediately
+
+#### 🔑 Grant API Permissions
+
+- Go to `API permissions > Add a permission`
+- Choose **Office 365 Management APIs**
+- Add the following **application permissions**:
+  - `ActivityFeed.Read`
+  - `ActivityFeed.ReadDlp`
+  - `ServiceHealth.Read`
+- Click **Grant admin consent**
+
+#### 🧩 Configure in SIEM (e.g., QRadar or Splunk)
+
+- Add log source: `Microsoft Office 365`
+- Protocol: `Office 365 REST API`
+- Input:
+  - **Client ID**
+  - **Client Secret**
+  - **Tenant ID**
+- Select log categories: Exchange, SharePoint, Azure AD, DLP
+- ⚠️ **Note**: API is rate-limited (HTTP 429); QRadar handles this by backing off automatically
+
+---
+
+## 2️⃣ Setup with Microsoft Graph Audit Logs API (Recommended)
+
+> Use this method for new deployments and future compatibility with Microsoft’s roadmap.
+
+### Step-by-Step
+
+#### ✅ Register an App in Microsoft Entra ID
+
+- Go to [Microsoft Entra Admin Center](https://entra.microsoft.com)
+- Navigate to: `Applications > App registrations > New registration`
+- Fill in:
+  - **Name**: `QRadar-Graph-Audit`
+  - **Supported account types**: *Single tenant*
+  - Save the **Client ID** and **Tenant ID**
+
+#### 🔐 Generate Client Secret
+
+- Go to `Certificates & secrets > New client secret`
+- Choose an expiry (e.g., 24 months)
+- Copy and store the secret value
+
+#### 🔑 Grant API Permissions
+
+- Go to `API permissions > Add a permission`
+- Choose: `Microsoft Graph > Application permissions`
+- Add:
+  - `AuditLog.Read.All`
+- Click **Grant admin consent**
+
+#### 🧩 Configure in SIEM (e.g., QRadar)
+
+- Add log source: `Microsoft Office 365`
+- Protocol: `Microsoft Graph API`
+- Input:
+  - **Client ID**
+  - **Client Secret**
+  - **Tenant ID**
+- Endpoint examples:
+  - `https://graph.microsoft.com/v1.0/auditLogs/directoryAudits`
+  - `https://graph.microsoft.com/v1.0/auditLogs/signIns`
+
+> 📝 **Note**: Ensure QRadar DSM (Device Support Module) is updated to support Graph API parsing.
+
+---
+
+### ✅ Verification
+
+You can validate your configuration by testing API queries:
+
+```http
+GET https://graph.microsoft.com/v1.0/auditLogs/directoryAudits
 
 
 ### Required Network Access
