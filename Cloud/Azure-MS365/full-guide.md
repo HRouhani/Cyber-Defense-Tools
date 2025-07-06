@@ -1,51 +1,204 @@
+# 🛡️ Guide: Integrating Microsoft Defender (XDR) Security Logs into SIEM
+
+- Focus: Microsoft 365 Defender components accessible via https://security.microsoft.com
+- 📌 A separate guide will cover Microsoft Defender for Cloud, accessible via https://portal.azure.com
+
+
 # Introduction
 
-This guide details how to integrate Microsoft 365 and Azure security logs into Siem (splunk, Qradar, ...) for centralized threat detection, compliance monitoring, and incident response. It is intended for security analysts, cloud administrators, and SIEM engineers with access to:
+This guide explains how to integrate Microsoft Defender (XDR) logs with external SIEMs such as IBM QRadar, Splunk, Elastic or even Sentinel to enable centralized threat detection, compliance monitoring, and incident response. It is intended for security analysts, cloud administrators, and SIEM engineers with access to:
 
     - An Azure subscription with Event Hub and Storage Account permissions
     - Microsoft 365 E5 or equivalent licenses (including Defender and Entra ID components)
 
 
+## Why Integrate Defender XDR with Your SIEM?
 
-## ✅ Onboard Microsoft Logs into SIEM
+Microsoft Defender XDR is a unified platform that correlates security signals from across the Microsoft 365 ecosystem:
 
-Modern Security Operations Centers (SOCs) rely on full visibility across identity, devices, email, and cloud services. Microsoft 365 and Azure provide extensive security telemetry — but to use it effectively, logs must be ingested into a centralized **SIEM** platform such as **IBM QRadar**, **Splunk**, or **Elastic**.
+🧠 Core Benefits:
+
+    - Cross-domain threat correlation (identity, endpoint, email, cloud apps)
+
+    - Incident grouping with full attack timeline and context
+
+    - AI-driven automatic remediation (self-healing)
+
+    - Centralized hunting & investigation via Kusto-like queries
+
+
+
+## ✅ Onboarding Microsoft Defender (XDR) Logs into Your SIEM
+
+Modern Security Operations Centers (SOCs) require comprehensive visibility across identities, endpoints, email, and SaaS activity to effectively detect and respond to threats.
+Microsoft Defender (XDR), offers rich security telemetry — but to operationalize it, these logs must be ingested into a centralized SIEM such as IBM QRadar, Splunk, or Elastic.
+
+This guide focuses exclusively on onboarding logs from Microsoft Defender XDR components available via https://security.microsoft.com.
+    📌 Logs from infrastructure/cloud workloads (Microsoft Defender for Cloud) will be covered in a separate guide.
 
 ---
 
 ## 🎯 Why Collect Microsoft Logs?
 
-Collecting logs from Microsoft 365 & Azure is essential for:
+Collecting logs from Microsoft Defender is essential for:
 
 - **🛡️ Threat Detection**  
-  Detect suspicious behavior, malware, lateral movement, and data exfiltration across users and endpoints.
+  Detect phishing, endpoint compromise, credential theft, lateral movement, malware, and SaaS abuse — all across a unified attack surface.
 
-- **📋 Compliance Monitoring**  
-  Ensure audit trails and fulfill regulatory requirements (e.g., GDPR, HIPAA, NIS2, ISO 27001).
+- **📋 Regulatory Compliance & Audit Readiness**  
+  Ensure tamper-proof audit trails and fulfill requirements for standards such as GDPR, HIPAA, ISO 27001, and NIS2. Logs from Entra ID, Purview, and Unified Audit Logs provide essential evidence.
 
 - **🚨 Incident Response**  
-  Correlate activity across identity, devices, and applications for forensics and investigation.
+  Correlate activity across identities, devices, mailboxes, and cloud apps to reconstruct the full attack path and enable targeted, automated remediation.
 
 ---
 
-## 🔍 Microsoft Services That Generate Logs
+## 🔍 Microsoft Defender XDR Components That Generate Logs
 
-Each Microsoft service focuses on a specific security domain:
+Microsoft Defender XDR is built on multiple specialized components, each focused on a specific security domain. Together, they provide rich, cross-domain telemetry for detection, investigation, and response — and all generate logs that can be ingested into a SIEM.
 
-- **🔐 Identity** – *Microsoft Entra ID (Azure AD)*  
-  Sign-in logs, risky users, MFA usage, role changes.
+---
 
-- **🖥️ Endpoints** – *Microsoft Defender for Endpoint (MDE)*  
-  Endpoint detections, behavioral analytics, vulnerability and EDR telemetry.
+## 🔐 Identity – Microsoft Entra ID (formerly Azure AD)
 
-- **🏢 On-prem Active Directory** – *Microsoft Defender for Identity (MDI)*  
-  Pass-the-hash, DCSync, Golden Ticket, and AD abuse detection.
+Captures identity and access-related activity:
 
-- **📧 Email & Collaboration** – *Microsoft Defender for Office 365 (MDO)*  
-  Phishing, malicious attachments, safe links, suspicious email forwarding rules.
+- Sign-in attempts and MFA status  
+- Risky users and risky sign-ins (via Entra ID Protection)  
+- Role changes, group modifications, admin actions  
+- Conditional Access policy outcomes  
 
-- **☁️ Cloud Applications** – *Microsoft Defender for Cloud Apps (MDCA)*  
-  Impossible travel, third-party app abuse, data leaks, and SaaS misuse.
+📤 **Log sources**: `SignInLogs`, `AuditLogs`, `RiskyUsers`, `RiskDetections`  
+✅ **Streamable via**: Azure Diagnostic Settings → Event Hub  
+🟡 **Note**: Requires **Microsoft Entra ID P2** license for risky user signals.
+
+---
+
+## 🖥️ Endpoints – Microsoft Defender for Endpoint (MDE)
+
+Provides advanced endpoint telemetry:
+
+- Malware detections, exploit attempts, and behavioral anomalies  
+- Process, file, network, and registry activity  
+- Device inventory and risk scoring  
+- Vulnerability insights and exposure data  
+
+📤 **Log sources**: `DeviceEvents`, `DeviceNetworkEvents`, `AlertInfo`, `VulnerabilityAssessmentResults`, `ProcessEvents`  
+✅ **Streamable via**: Microsoft 365 Defender Streaming API → Event Hub  
+🟡 **Note**: Full telemetry requires **Defender for Endpoint P2**.
+
+---
+
+## 🏢 On-prem Active Directory – Microsoft Defender for Identity (MDI)
+
+Monitors domain controller traffic to detect:
+
+- Credential theft (e.g., Pass-the-Hash, DCSync, Golden Ticket, Kerberoasting)  
+- Reconnaissance and lateral movement  
+- Suspicious admin behavior and service account misuse  
+
+📤 **Log sources**: `IdentityInfo`, `Alerts`, `SuspectedActivity`, `HoneytokenActivity`  
+✅ **Streamable via**: Event Hub or portal API  
+🟡 **Note**: Requires **sensors installed on all on-prem Domain Controllers**.
+
+---
+
+## 📧 Email & Collaboration – Microsoft Defender for Office 365 (MDO)
+
+Secures email and Microsoft 365 collaboration platforms:
+
+- Phishing attempts and malicious attachments  
+- Malicious URLs (via Safe Links)  
+- Abnormal forwarding rules and inbox manipulation  
+- User clicks on malicious links  
+
+📤 **Log sources**: `EmailEvents`, `EmailUrlInfo`, `ThreatIntelligence`, `EmailAttachmentInfo`  
+✅ **Streamable via**: Microsoft 365 Defender Streaming API  
+🟡 **Note**: Some logs (e.g., message trace) are only available via **Unified Audit Log** or **Microsoft Graph API**.
+
+---
+
+## ☁️ Cloud Applications – Microsoft Defender for Cloud Apps (MDCA)
+
+Enhances visibility and control over SaaS usage:
+
+- Impossible travel and anomalous login patterns  
+- OAuth abuse and risky third-party apps  
+- Data exfiltration and policy violations  
+- Shadow IT and unsanctioned app usage  
+
+📤 **Log sources**: `MCASAlerts`, `CloudDiscoveryEvents`, `AppGovernanceAlerts`, `UserActivityLogs`  
+✅ **Streamable via**: Event Hub  
+🟡 **Note**: Deep activity data often requires access via **MCAS API** or **portal download**.
+
+---
+
+## 🛡️ Microsoft Defender Vulnerability Management (MDVM)
+
+Tracks asset exposure and vulnerability risk:
+
+- CVE insights and severity scoring  
+- Security posture assessments per device  
+- Patch recommendations and remediation tasks  
+
+📤 **Log sources**: `DeviceTvmSoftwareVulnerabilities`, `DeviceTvmSecureConfigurationStates`  
+🟡 **Streamability**: Partial; mostly available via **Advanced Hunting** or **Graph Security API**  
+🟡 **Note**: Requires **MDE P2** with **MDVM add-on** or **Microsoft 365 E5**.
+
+---
+
+## 🌐 Microsoft Defender for Cloud
+
+Focuses on infrastructure, cloud workloads, and posture management (CNAPP):
+
+- CSPM misconfigurations, vulnerability alerts, container risks  
+- VM, storage, and database-level protections  
+
+📤 **Log sources**: Azure Activity Logs, `SecurityAlert`, `SecurityRecommendation`  
+❌ **Not natively part of XDR streaming**  
+📝 **Note**: Handled via **Azure Monitor / Sentinel / Event Hub**, not integrated directly into XDR.
+
+---
+
+## 🔒 Microsoft Data Loss Prevention (DLP)
+
+Protects sensitive data in emails, files, and chats:
+
+- Policy match events (e.g., credit card detection in email/file)  
+- Data transfer violations and sensitive info exposure  
+
+📤 **Log sources**: Purview Audit Logs, Unified Audit Logs  
+🟡 **Streamability**: Not directly streamable — access via **Graph API** or **O365 Management API**  
+🟡 **Note**: Part of **Microsoft Purview** and requires configuration of DLP policies.
+
+---
+
+## 🔍 App Governance
+
+Secures OAuth-based apps connected to Microsoft 365:
+
+- Excessive permissions granted to third-party apps  
+- Abnormal data access or sharing patterns  
+- Token misuse and risky app behavior  
+
+📤 **Log sources**: `AppGovernanceAlerts`, `OAuthActivityLogs`  
+🟡 **Streamability**: Available via **API** and **MDCA integration**  
+🟡 **Note**: Requires **App Governance** license (not included by default).
+
+---
+
+## 👤 Microsoft Purview Insider Risk Management
+
+Monitors internal user behavior for risk indicators:
+
+- Data exfiltration patterns  
+- Confidential data transfers  
+- Policy violations and behavioral anomalies  
+
+📤 **Log sources**: Purview alerts, Unified Audit Logs  
+🟡 **Streamability**: Not directly streamable — typically accessed via **compliance center** or **Graph API**  
+🟡 **Note**: Requires **Purview IRM licensing** and sensitive data policies to be configured.
+
 
 ---
 
