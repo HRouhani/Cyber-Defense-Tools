@@ -326,25 +326,68 @@ Important: As of July 2025, the Office 365 Management Activity API is supported,
 
 ## 2. 🔧 Integration Methods Overview
 
-### A. Azure Event Hub Streaming (Recommended for Security Events)
+Microsoft Defender XDR logs can be integrated into external SIEM platforms using two primary methods:
 
-Streams security telemetry and alerts in near real-time using Event Hub and QRadar’s Event Hub protocol.
-
-**Use Cases:**
-- Defender alerts (MDE, MDI, MDO)  
-- Entra ID sign-ins and audit logs  
-- Defender for Cloud Apps alerts  
+- **Azure Event Hub streaming** for near real-time telemetry and security alerts
+- **Microsoft Graph Audit Logs API** for compliance, audit, and user activity logs
 
 ---
 
-### B. Office 365 REST API (Required for Compliance Logs)
+### A. Azure Event Hub Streaming *(Recommended for Security Events)*
 
-Polls audit/compliance logs from Microsoft 365 using the official Microsoft APIs.
+Streams near real-time security telemetry and alerts using **Azure Event Hub**, which is supported by most SIEM platforms (e.g., IBM QRadar, Splunk, Elastic).
 
 **Use Cases:**
-- Unified Audit Log (Exchange, SharePoint, Teams)  
-- Microsoft Purview DLP & compliance events  
-- Admin/user activity for audits  
+- Security alerts and raw telemetry from:
+  - Microsoft Defender for Endpoint (MDE)
+  - Microsoft Defender for Identity (MDI)
+  - Microsoft Defender for Office 365 (MDO)
+- Sign-in and audit logs from **Microsoft Entra ID**
+- Alerts from **Microsoft Defender for Cloud Apps (MDCA)**
+
+✅ **Best for**: High-volume, time-sensitive logs that support threat detection and correlation.
+
+---
+
+### B. Microsoft Graph Audit Logs API *(Recommended for Compliance and Audit Logs)*
+
+Polls **audit and compliance logs** from Microsoft 365 using the modern **Microsoft Graph Audit Logs API**. This API offers broader coverage, better performance, and is actively maintained by Microsoft.
+
+**Use Cases:**
+- Unified Audit Logs (Exchange, SharePoint, Teams, OneDrive)  
+- Microsoft Purview DLP events and Insider Risk indicators  
+- Admin/user activity logs for compliance and forensic audits  
+
+✅ **Best for**: Regulatory reporting, audit readiness, and deep forensic investigations.
+
+📝 **Notes**:
+- Typical polling interval: 5–30 minutes  
+- Requires app registration and permissions like `AuditLog.Read.All`  
+- Supported endpoints include:
+  - `/auditLogs/signIns`
+  - `/auditLogs/directoryAudits`
+  - `/security/alerts`
+  - `/identityProtection/riskyUsers`
+
+---
+
+### 🔁 (Optional) Legacy Option – Office 365 Management Activity API *(Deprecated)*
+
+Still supported for backward compatibility but **being phased out** in favor of Microsoft Graph.
+
+**Use Cases:**
+- Mailbox access (Exchange Online)  
+- File activity (SharePoint Online)  
+- Admin actions (e.g., role changes, mailbox rules)  
+- DLP and audit logs via `/contentType/` feeds
+
+🟡 **Use only if** your SIEM (e.g., older QRadar DSMs) does not yet support Graph API.
+
+📤 Legacy permissions:  
+- `ActivityFeed.Read`  
+- `ActivityFeed.ReadDlp`  
+- `ServiceHealth.Read`
+
 
 ---
 
