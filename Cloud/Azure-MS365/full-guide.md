@@ -391,7 +391,7 @@ Still supported for backward compatibility but **being phased out** in favor of 
 
 ---
 
-## 3. How to Verify Logging Is Active for Microsoft 365 Security Sources
+## 3. How to Verify Logging Is Active for Microsoft Defender XDR Components
 
 ## Microsoft Entra ID (Azure AD)
 - Sign-in Logs and Audit Logs are enabled by default.
@@ -457,24 +457,35 @@ Still supported for backward compatibility but **being phased out** in favor of 
 
 
 
-## 4. Architecture & Communication
+## 4. 🧱 Architecture & Communication Overview
 
-| Component                | Protocol | Port | Purpose                              |
-|--------------------------|----------|------|--------------------------------------|
-| Azure Event Hub          | AMQP     | 5671 | Streams security telemetry           |
-| Azure Blob Storage       | HTTPS    | 443  | Checkpoint tracking (offsets)        |
-| Office 365 REST API      | HTTPS    | 443  | Poll audit logs from M365            |
+This section describes how logs from Microsoft Defender XDR components are delivered to SIEM using:
 
-Two QRadar log sources are used:
+- **Azure Event Hub** for real-time streaming of security telemetry
+- **Microsoft Graph API** (modern) or **Office 365 Management Activity API** (legacy) for compliance and audit logs
 
- **Event Hub** log source for security telemetry  
- **Office 365 REST API** for compliance data  
+---
+
+### 🔌 Communication & Protocol Matrix
+
+| Component                     | Protocol | Port | Purpose                                     |
+|------------------------------|----------|------|---------------------------------------------|
+| Azure Event Hub              | AMQP     | 5671 | Real-time streaming of security events      |
+| Azure Blob Storage           | HTTPS    | 443  | Offset tracking for Event Hub consumer group |
+| Microsoft Graph API          | HTTPS    | 443  | Pull audit/compliance data from M365        |
+| Office 365 Management API    | HTTPS    | 443  | Legacy method for audit log retrieval       |
+
+---
+
+### 🎯 QRadar Log Sources
+
+- **Event Hub log source** → for high-volume Defender telemetry (MDE, MDI, MDO, MDCA)  
+- **Graph API or Office 365 REST API log source** → for Unified Audit Log (UAL), DLP, admin activity
 
 ---
 
 
-
-## A. Event Hub Integration
+## A. ⚙️ Azure Event Hub Integration (Real-Time)
 
 ### Prerequisites
 
@@ -490,20 +501,24 @@ Two QRadar log sources are used:
  
  # Azure Setup: Event Hub Configuration
 
+This section describes how to configure Azure Event Hub for streaming Microsoft Defender XDR logs to a SIEM (e.g., QRadar or Splunk).  
+We provide **both methods**:
 
-1. Create Event Hub Namespace & Event Hub
+- ✅ **Azure Portal** (GUI-based)
+- ✅ **Azure CLI** (scriptable automation)
 
- Create Event Hub Namespace & Event Hub (Portal)
+---
 
-Open the Azure Portal
+## 1️⃣ Create Event Hub Namespace and Event Hub
 
-Go to Event Hubs > + Create
+### 🔹 Via Azure Portal
+1. Sign in to [https://portal.azure.com](https://portal.azure.com)
+2. Go to **Event Hubs > + Create**
+3. Create a new **Namespace**, e.g., `psiem-namespace`
+4. Inside the namespace, create a new **Event Hub**, e.g., `security-logs-hub`
 
-Create a new Namespace (e.g. psiem-namespace)
 
-Inside the Namespace, create an Event Hub (e.g. security-logs-hub)
-
-Azure CLI:
+### 🔹 Via Azure CLI
 
 
 ```bash
@@ -513,8 +528,9 @@ az eventhubs eventhub create --resource-group <ResourceGroupName> --namespace-na
 ```
 
 
+## 2️⃣ Create Shared Access Policies (SAS Tokens)
 
-2. Create SAS Policies
+### 🔹 Via Azure Portal
 
     - Go to your Event Hub Namespace
 
@@ -526,8 +542,10 @@ az eventhubs eventhub create --resource-group <ResourceGroupName> --namespace-na
 
     - ListenPolicy with only Listen permission
 
-    - Copy the connection string for ListenPolicy
+    - Copy the connection string for ListenPolicy - used by the SIEM for ingestion
 
+
+### 🔹 Via Azure CLI
 
 ```bash
 # Send policy
@@ -552,7 +570,11 @@ az eventhubs namespace authorization-rule keys list \
 ```
 
 
-3. Create a Dedicated Consumer Group
+## 3️⃣ Create a Dedicated Consumer Group
+
+A dedicated consumer group ensures isolated consumption by the SIEM, avoiding read conflicts.
+
+### 🔹 Via Azure Portal
 
     - Open your Event Hub
 
@@ -563,7 +585,7 @@ az eventhubs namespace authorization-rule keys list \
     - Name it: qradar-cg
 
 
-Azure CLI:
+### 🔹 Via Azure CLI
 
 ```bash
 az eventhubs eventhub consumer-group create \
@@ -574,7 +596,11 @@ az eventhubs eventhub consumer-group create \
 ```
 
 
-4. Create Azure Storage Account for Checkpointing 
+## 4️⃣ Create Azure Storage Account (for Checkpointing)
+
+This storage account allows checkpoint tracking — essential for tracking read offsets between the SIEM and Event Hub.
+
+### 🔹 Via Azure Portal
 
    - Go to Storage accounts > + Create
 
@@ -586,6 +612,9 @@ az eventhubs eventhub consumer-group create \
 
    - Copy one of the two Access Keys or generate a SAS
 
+
+
+### 🔹 Via Azure CLI
 
 ```bash
 az storage account create \
