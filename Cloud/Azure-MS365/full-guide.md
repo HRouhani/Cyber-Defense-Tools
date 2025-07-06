@@ -831,6 +831,7 @@ You can validate your configuration by testing API queries:
 
 ```http
 GET https://graph.microsoft.com/v1.0/auditLogs/directoryAudits
+```
 
 
 ### Required Network Access
