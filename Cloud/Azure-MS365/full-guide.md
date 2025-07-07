@@ -1,7 +1,13 @@
-# 🛡️ Guide: Integrating Microsoft Defender (XDR) Security Logs into SIEM
+# 🛡️ Guide: Integrating Microsoft Defender XDR & Entra ID Security Logs into SIEM
 
-- Focus: Microsoft Defender (XDR) components accessible via https://security.microsoft.com
-- 📌 A separate guide will cover Microsoft Defender for Cloud, accessible via https://portal.azure.com
+**Focus:**  
+This guide covers **Microsoft Defender XDR components** (accessible via `https://security.microsoft.com`) **and Microsoft Entra ID** (accessible via `https://entra.microsoft.com`), including:
+
+- Defender for Endpoint, Office 365, Identity, and Cloud Apps  
+- Microsoft Entra ID logs (Sign-ins, Audit Logs, Identity Protection)
+
+📌 Logs from **Microsoft Defender for Cloud** (infrastructure & workload protection, `https://portal.azure.com`) will be addressed in a **separate guide**.
+
 
 
 # Introduction
