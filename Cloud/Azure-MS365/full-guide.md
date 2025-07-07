@@ -226,7 +226,7 @@ By centralizing Microsoft logs in your SIEM:
 
 ## 🎯 Objective Summary: Why Integrate These Defender Components with SIEM?
 
-Integrating Microsoft Defender XDR with your SIEM enables full-spectrum threat monitoring and compliance tracking across:
+Integrating Microsoft Defender (XDR) & Entra ID logs with your SIEM enables full-spectrum threat monitoring and compliance tracking across:
 
 | Component                        | Use in SIEM                            |
 |----------------------------------|----------------------------------------|
@@ -351,7 +351,22 @@ Streams near real-time security telemetry and alerts using **Azure Event Hub**, 
 - Sign-in and audit logs from **Microsoft Entra ID**
 - Alerts from **Microsoft Defender for Cloud Apps (MDCA)**
 
-✅ **Best for**: High-volume, time-sensitive logs that support threat detection and correlation.
+✅ **Best for**: High-volume, time-sensitive logs that support threat detection and correlation. we can see the Data Flow Diagram here:
+
+Microsoft 365 Defender (MDE, MDI, MDO) + Entra ID + Purview
+                    |
+                    | [Streaming API]
+                    |
+               Azure Event Hub
+                    | [SIEM pulls logs]
+                    |
+              SIEM Ingestion Layer
+                    | [Processing and Parsing]
+                    |
+                SIEM Console
+                    | [Analysis and Correlation]
+
+
 
 ---
 
