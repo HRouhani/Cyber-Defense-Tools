@@ -353,6 +353,7 @@ Streams near real-time security telemetry and alerts using **Azure Event Hub**, 
 
 ✅ **Best for**: High-volume, time-sensitive logs that support threat detection and correlation. we can see the Data Flow Diagram here:
 
+```
 Microsoft 365 Defender (MDE, MDI, MDO) + Entra ID + Purview
                     |
                     | [Streaming API]
@@ -365,8 +366,7 @@ Microsoft 365 Defender (MDE, MDI, MDO) + Entra ID + Purview
                     |
                 SIEM Console
                     | [Analysis and Correlation]
-
-
+```
 
 ---
 
