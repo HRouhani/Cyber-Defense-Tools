@@ -23,7 +23,7 @@ Register an application in Microsoft Entra ID (Azure AD) for QRadar to authentic
 	⁃	SecurityEvents.Read.All (for Microsoft Defender XDR alerts via Graph Security API)
 	⁃	Optional (if using Entra ID P2): Directory.Read.All, IdentityRiskyUser.Read.All, IdentityRiskEvent.Read.All, Reports.Read.All
 	⁃	Optional (for future-proofing audit log access via Graph): AuditLog.Read.All
-    
+
 	◦	APIs my organization uses > Search for Office 365 Management APIs > Application permissions:
 	⁃	ActivityFeed.Read (to read unified audit logs)
 	⁃	ActivityFeed.ReadDlp (to read DLP events)
@@ -32,6 +32,7 @@ Register an application in Microsoft Entra ID (Azure AD) for QRadar to authentic
  		# After selecting the permissions, Grant admin consent for the tenant so that the app can access these scopes without user interaction. This registration will be used by QRadar to pull M365 audit logs and Defender alerts via Graph API.
 
 ## Enable Microsoft 365 Logging Services
+
 Before configuring QRadar, ensure the relevant logging is active in the arouhan Microsoft 365 tenant:
 	•	Unified Audit Log (Purview Audit) – This is usually enabled by default for E5 or E3 with compliance add-on. Verify in the Microsoft Purview compliance portal under Audit that audit recording is turned On. If not, enable it to start collecting audit events across Exchange, SharePoint, Teams, Azure AD, etc.
 	•	Microsoft Defender (XDR) Alerts – Ensure that Microsoft Defender is generating alerts. In the Microsoft Defender portal (security.microsoft.com), under Settings > Microsoft Defender XDR , verify that alerting is active (it should be by default for Defender for Endpoint/Identity/Office, etc.). No special switch is needed, but confirm incidents/alerts are being generated in the portal.
