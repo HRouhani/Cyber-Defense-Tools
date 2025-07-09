@@ -33,11 +33,12 @@ Register an application in Microsoft Entra ID (Azure AD) for QRadar to authentic
 
 ## Enable Microsoft 365 Logging Services
 
+```bash
 Before configuring QRadar, ensure the relevant logging is active in the arouhan Microsoft 365 tenant:
 	•	Unified Audit Log (Purview Audit) – This is usually enabled by default for E5 or E3 with compliance add-on. Verify in the Microsoft Purview compliance portal under Audit that audit recording is turned On. If not, enable it to start collecting audit events across Exchange, SharePoint, Teams, Azure AD, etc.
 	•	Microsoft Defender (XDR) Alerts – Ensure that Microsoft Defender is generating alerts. In the Microsoft Defender portal (security.microsoft.com), under Settings > Microsoft Defender XDR , verify that alerting is active (it should be by default for Defender for Endpoint/Identity/Office, etc.). No special switch is needed, but confirm incidents/alerts are being generated in the portal.
 	•	Entra ID Sign-In and Audit Logs – Azure AD (Entra ID) automatically logs sign-ins and audit events. You can confirm by checking Azure AD > Monitoring > Sign-in logs and Audit logs in the Azure Portal. These logs will be streamed via Event Hub in our integration.
-
+```
 
 ## Azure Event Hub Configuration (Real-Time Telemetry)
 Use Azure Event Hubs to stream high-volume telemetry (like sign-in logs and advanced hunting events) to QRadar with minimal latencyl. The following steps assume you have appropriate Azure access in the arouhan tenant:
