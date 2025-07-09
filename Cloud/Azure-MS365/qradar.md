@@ -41,6 +41,8 @@ Before configuring QRadar, ensure the relevant logging is active in the arouhan 
 ```
 
 ## Azure Event Hub Configuration (Real-Time Telemetry)
+
+```bash
 Use Azure Event Hubs to stream high-volume telemetry (like sign-in logs and advanced hunting events) to QRadar with minimal latencyl. The following steps assume you have appropriate Azure access in the arouhan tenant:
 	1	Create an Event Hubs Namespace (Azure Portal > Create a resource > Event Hubs). For example:
 	◦	Namespace name: arouhan-psiem (this is an example naming convention for arouhan’s SIEM integration).
@@ -79,18 +81,22 @@ Use Azure Event Hubs to stream high-volume telemetry (like sign-in logs and adva
 	▪	Email events (EmailEvents, EmailAttachmentInfo, etc., if Defender for Office 365 is in use)
 	▪	Choose all relevant tables needed for your monitoring. (These correspond to the Advanced Hunting schema events.)
 	▪	Save the configuration. Microsoft Defender for Endpoint/Office/Identity will now push the selected event telemetry to the Event Hub in real-time.
+
+```
 Note: The Streaming API sends raw events in a JSON structure under a records array for each message. QRadar’s DSM for Microsoft 365 Defender (Advanced Hunting events) will parse these events, but ensure your QRadar is on a recent DSM version that supports these event types.
 
 
 
 # QRadar Configuration – Log Sources
+```bash
 In QRadar, you will set up three log sources to cover the different data streams for arouhan:
 	1	Entra ID Logs via Event Hub – for Azure AD sign-in and audit events (real-time).
 	2	Microsoft 365 Defender Alerts via Graph API – for security alerts (near-real-time, polled).
 	3	Microsoft 365 Audit Logs via Graph API – for unified audit log events (polled periodically).
 Each log source is configured through the QRadar Admin interface (Admin > Data Sources > Log Sources > Add). Below are the details for each:
+```
 
-
+```bash
 ## 1. Entra ID (Azure AD) Logs – Event Hub Integration
 This log source pulls Azure AD sign-in and audit logs from the Event Hub:
 	•	Log Source Name: e.g. Entra ID @ AzureADarouhanprod (a descriptive name indicating Entra ID logs for arouhan prod).
@@ -111,9 +117,9 @@ This log source pulls Azure AD sign-in and audit logs from the Event Hub:
 	•	EPS Throttle: e.g. 10000 EPS (events per second) – a high cap to ensure QRadar doesn’t drop bursts of events.
 	•	Click Test Connection. If configured correctly, QRadar should show a successful connection to the event hub. Then Save the log source.
 <small>After a few minutes, this log source should start receiving Azure AD events. In the Log Activity tab, verify events labeled with the “Microsoft Entra ID” DSM are appearing.</small>
+```
 
-
-
+```bash
 ## 2. Microsoft Defender Alerts – Graph Security API
 This log source uses the Microsoft Graph Security API to poll for security alerts (incidents) from Microsoft 365 Defender (covering Defender for Endpoint, Defender for Office 365, Defender for Identity, etc., via the unified Graph security interface):
 	•	Log Source Name: e.g. Defender XDR @ D4M365arouhanprod  
@@ -133,8 +139,9 @@ This log source uses the Microsoft Graph Security API to poll for security alert
 	•	EPS Throttle: 5000 (alerts are fewer, but set a reasonable cap).
 	•	Click Test Connection – QRadar will attempt to authenticate to Graph and fetch a sample alert. On success (“Successfully queried Microsoft Graph Security API”), Save the log source.
 The QRadar Microsoft 365 Defender DSM will parse incoming alerts (via the Graph Security API). Ensure that your QRadar version/DSM supports the alerts v2 schema. According to IBM, the Microsoft 365 Defender DSM can collect alerts from the Defender Alerts v2 API via the Graph protocolibm.com (requiring the SecurityEvents.Read.All permission we configuredibm.com).
+````
 
-
+```bash
 ## 3. Microsoft 365 Unified Audit Log via Office 365 REST API
 This log source polls the Microsoft 365 Unified Audit Log (UAL) for events across Azure AD, Exchange, SharePoint, Teams, and DLP using the Office 365 REST API protocol, which connects to the Office 365 Management Activity API (https://manage.office.com). As of April 2025, this API is fully supported with no announced retirement date (Microsoft Learn). The Microsoft Graph API for Audit Logs protocol is not currently available in QRadar’s Microsoft Office 365 DSM.
 
@@ -166,11 +173,14 @@ This log source polls the Microsoft 365 Unified Audit Log (UAL) for events acros
     ```bash
 	SELECT * FROM events WHERE logsourcetype = 'Microsoft Office 365' LAST 1 HOUR
     ```
+```
 
 Note: Ensure the Azure AD app (QRadar-arouhan-GraphAPI-Collector) has ActivityFeed.Read and ActivityFeed.ReadDlp permissions (Microsoft Learn). Monitor Microsoft for any API retirement announcements and IBM for DSM updates supporting Microsoft Graph API for Audit Logs (IBM App Exchange). Test parsing in a non-production environment (Reddit).
 
 
-Additional Configuration: Handling Duplicates
+## Additional Configuration: Handling Duplicates
+
+```bash
 Using both Azure Event Hubs (for Microsoft Entra ID and Microsoft 365 Defender events) and the Office 365 Management Activity API (for Microsoft Office 365 audit logs) may result in duplicate events in QRadar, as some events (e.g., Azure AD sign-in events) could appear in both streams. To manage duplicates:
 	•	Deduplication Rule: Create a QRadar rule to drop or flag duplicate events. Extract a unique identifier (e.g., Id for Azure AD events or RecordId for audit logs) as a Custom Event Property (CEP), named eventId.
 	◦	In QRadar, go to Log Activity > Add Filter > Custom Event Property to define eventId by extracting Id or RecordId from event payloads (IBM Docs).
@@ -179,6 +189,7 @@ Using both Azure Event Hubs (for Microsoft Entra ID and Microsoft 365 Defender e
 	▪	Action: Suppress or throttle the duplicate event (e.g., drop the second event).
 	•	Alternative: Reduce overlap by limiting event types in the Microsoft Office 365 log source (e.g., exclude Azure Active Directory events if covered by Event Hubs). Retaining both sources provides backup and cross-validation.
 	•	Verify Duplicates: Run this AQL query in QRadar to identify duplicates:
+```
 
 ```bash
 SELECT "eventId", COUNT(*)
@@ -191,7 +202,9 @@ LAST 1 HOURS
 ```
 
 
-Monitoring and Verification
+### Monitoring and Verification
+
+```bash
 Monitor Azure and QRadar to ensure proper event collection:
 	•	In QRadar:
 	◦	Go to Log Activity and filter by:
@@ -199,19 +212,24 @@ Monitor Azure and QRadar to ensure proper event collection:
 	▪	Microsoft 365 Defender (Graph Security API alerts).
 	▪	Microsoft Office 365 (audit logs via Office 365 REST API).
 	◦	Run this AQL query to check event counts:
+
+    ```bash
 	SELECT logsourcetype, COUNT(*)
 	FROM events
 	WHERE logsourcetype IN ('Microsoft Entra ID', 'Microsoft 365 Defender', 'Microsoft Office 365')
 	GROUP BY logsourcetype
 	LAST 15 MINUTES
+    ```
 
 	•	In Azure:
 	◦	Check Event Hub metrics (Azure Portal > Event Hubs > [your hub] > Metrics) for incoming messages (Microsoft Learn).
 	◦	Verify API calls in Azure AD app’s audit logs (Azure Portal > Microsoft Entra ID > Audit logs) to confirm QRadar polling.
 	◦	Test scenarios (e.g., user login, file access) to ensure events appear in QRadar.
 	•	Troubleshooting: If events are missing, check QRadar log source status, network connectivity, or Azure AD app permissions (ActivityFeed.Read, ActivityFeed.ReadDlp for Office 365 REST API) (Microsoft Learn).
+```
 
-Network and Firewall Considerations
+### Network and Firewall Considerations
+```bash
 Ensure QRadar can reach these endpoints (TCP 443 HTTPS):
 	•	Azure AD/Authentication:
 	◦	login.microsoftonline.com (OAuth token retrieval)
@@ -234,4 +252,4 @@ Sources
 	•	Microsoft Learn - Azure Event Hubs Monitoring
 	•	Reddit - QRadar Office 365 Log Issues
 
-
+```
