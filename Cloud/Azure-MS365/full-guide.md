@@ -356,7 +356,7 @@ Streams near real-time security telemetry and alerts using **Azure Event Hub**, 
 ```
 Microsoft 365 Defender (MDE, MDI, MDO) + Entra ID + Purview
                     |
-                    | [Streaming API]
+                    | [Streaming API (pushes logs)] 
                     |
                Azure Event Hub
                     | [SIEM pulls logs]
