@@ -10,23 +10,23 @@ arouhan is an example name here for the tenant!
 Register an application in Microsoft Entra ID (Azure AD) for QRadar to authenticate and call APIs:
 
 	1	Create a new App Registration in the arouhan Azure AD tenant (Azure Portal > Azure Active Directory > App registrations > New registration):
-	◦	Name: e.g. QRadar-arouhan-GraphAPI-Collector
-	◦	Supported account types: Accounts in this organizational directory.
-	◦	Redirect URI: Leave blank or set to http://localhost
-	◦	Once created, note the Application (Client) ID and Directory (Tenant) ID (you will need these in QRadar).
+	    ◦	Name: e.g. QRadar-arouhan-GraphAPI-Collector
+	    ◦	Supported account types: Accounts in this organizational directory.
+	    ◦	Redirect URI: Leave blank or set to http://localhost
+	    ◦	Once created, note the Application (Client) ID and Directory (Tenant) ID (you will need these in QRadar).
 
 	2	Create a Client Secret for the app (Azure AD > App registrations > Your app > Certificates & Secrets > New client secret). Copy and save the secret value immediately – it will be hidden on refresh. This will serve as the authentication key for QRadar (client secret is preferred for simplicity, instead of a certificate).
 
 	3	Assign API Permissions (API Permissions > Add a permission):
 
 	◦	Microsoft Graph > Application permissions:
-	⁃	SecurityEvents.Read.All (for Microsoft Defender XDR alerts via Graph Security API)
-	⁃	Optional (if using Entra ID P2): Directory.Read.All, IdentityRiskyUser.Read.All, IdentityRiskEvent.Read.All, Reports.Read.All
-	⁃	Optional (for future-proofing audit log access via Graph): AuditLog.Read.All
+	    ⁃	SecurityEvents.Read.All (for Microsoft Defender XDR alerts via Graph Security API)
+	    ⁃	Optional (if using Entra ID P2): Directory.Read.All, IdentityRiskyUser.Read.All, IdentityRiskEvent.Read.All, Reports.Read.All
+	    ⁃	Optional (for future-proofing audit log access via Graph): AuditLog.Read.All
 
 	◦	APIs my organization uses > Search for Office 365 Management APIs > Application permissions:
-	⁃	ActivityFeed.Read (to read unified audit logs)
-	⁃	ActivityFeed.ReadDlp (to read DLP events)
+	    ⁃	ActivityFeed.Read (to read unified audit logs)
+	    ⁃	ActivityFeed.ReadDlp (to read DLP events)
 			  # note:  These permissions are not part of the Microsoft Graph API; they are listed under the Office 365 Management APIs in the Azure AD App Registration portal, and is for Microsoft 365 Unified Audit Log via Office 365 REST API which still uses Office 365 REST API
 
  		# After selecting the permissions, Grant admin consent for the tenant so that the app can access these scopes without user interaction. This registration will be used by QRadar to pull M365 audit logs and Defender alerts via Graph API.
@@ -45,42 +45,42 @@ Before configuring QRadar, ensure the relevant logging is active in the arouhan 
 ```bash
 Use Azure Event Hubs to stream high-volume telemetry (like sign-in logs and advanced hunting events) to QRadar with minimal latencyl. The following steps assume you have appropriate Azure access in the arouhan tenant:
 	1	Create an Event Hubs Namespace (Azure Portal > Create a resource > Event Hubs). For example:
-	◦	Namespace name: arouhan-psiem (this is an example naming convention for arouhan’s SIEM integration).
-	◦	Pricing tier/capacity: choose based on expected throughput (Standard tier is usually sufficient).
+	    ◦	Namespace name: arouhan-psiem (this is an example naming convention for arouhan’s SIEM integration).
+	    ◦	Pricing tier/capacity: choose based on expected throughput (Standard tier is usually sufficient).
 	2	Create an Event Hub within the namespace (Azure Portal > your Event Hubs namespace > Event Hubs > + Event Hub):
-	◦	Name: e.g. security-logs-hub (an event hub to receive security logs).
-	◦	You may use one hub for multiple sources (Azure AD, Defender) or separate hubs per source. Here we use a single hub for simplicity.
+	    ◦	Name: e.g. security-logs-hub (an event hub to receive security logs).
+	    ◦	You may use one hub for multiple sources (Azure AD, Defender) or separate hubs per source. Here we use a single hub for simplicity.
 	3	Create a Consumer Group on the Event Hub (Azure Portal > your Event Hub > Consumer Groups > + Consumer Group):
-	◦	Name: e.g. arouhan-psiem-cg (avoid using the default $Default group in production).
-	◦	QRadar will use this consumer group when reading events.
+	    ◦	Name: e.g. arouhan-psiem-cg (avoid using the default $Default group in production).
+	    ◦	QRadar will use this consumer group when reading events.
 	4	Create Shared Access Policies (SAS) for the Event Hub:
-	◦	Under your Event Hubs namespace (or the specific hub), go to Shared access policies. Create two policies:
-	▪	SendPolicy – with Send permissions. QRadar won’t use this directly, but Azure services (like Azure AD diagnostics and Defender streaming) will use this to send data to the hub.
-	▪	ListenPolicy – with Listen (and Read) permissions. QRadar will use this to listen for events.
-	◦	After creating each policy, copy the Connection string–primary key value. You will use the ListenPolicy connection string in the QRadar configuration for the Event Hubs protocol.
+	    ◦	Under your Event Hubs namespace (or the specific hub), go to Shared access policies. Create two policies:
+	        ▪	SendPolicy – with Send permissions. QRadar won’t use this directly, but Azure services (like Azure AD diagnostics and Defender streaming) will use this to send data to the hub.
+	        ▪	ListenPolicy – with Listen (and Read) permissions. QRadar will use this to listen for events.
+	    ◦	After creating each policy, copy the Connection string–primary key value. You will use the ListenPolicy connection string in the QRadar configuration for the Event Hubs protocol.
 	5	Create an Azure Storage Account (if not already) for Event Hub checkpointing (this is required by QRadar’s Event Hubs protocol to track offsets). For example:
-	◦	Name: arouhancheckpoint (any unique name).
-	◦	General-purpose v2 storage in the same region as the event hub is recommended.
-	◦	After creation, go to Access keys and copy the connection string for the storage account (this will be configured in QRadar). Ensure the storage account allows blob access (the QRadar Event Hub connector will create a blob container named qradar for tracking checkpoints).
+	    ◦	Name: arouhancheckpoint (any unique name).
+	    ◦	General-purpose v2 storage in the same region as the event hub is recommended.
+	    ◦	After creation, go to Access keys and copy the connection string for the storage account (this will be configured in QRadar). Ensure the storage account allows blob access (the QRadar Event Hub connector will create a blob container named qradar for tracking checkpoints).
 	6	Stream Entra ID Logs to Event Hub: Configure Azure AD to send logs to the Event Hub:
-	◦	In Azure Portal, navigate to Azure AD > Monitoring > Diagnostic settings. Add a new diagnostic setting (e.g., aad-to-eventhub).
-	◦	Categories: Select SignInLogs and AuditLogs (these correspond to user sign-ins and directory audit events).
-	◦	Destination: Choose Stream to an Event Hub. Select the arouhan-psiem Event Hubs namespace and the security-logs-hub event hub. Ensure the SendPolicy connection string (namespace authorization rule) is used by Azure (the portal will handle this when you select the namespace and hub). Save the diagnostic setting.
-	◦	Result: Entra ID sign-in and audit events will now stream to the event hub in real-time.
+	    ◦	In Azure Portal, navigate to Azure AD > Monitoring > Diagnostic settings. Add a new diagnostic setting (e.g., aad-to-eventhub).
+	    ◦	Categories: Select SignInLogs and AuditLogs (these correspond to user sign-ins and directory audit events).
+	    ◦	Destination: Choose Stream to an Event Hub. Select the arouhan-psiem Event Hubs namespace and the security-logs-hub event hub. Ensure the SendPolicy connection string (namespace authorization rule) is used by Azure (the portal will handle this when you select the namespace and hub). Save the diagnostic setting.
+	    ◦	Result: Entra ID sign-in and audit events will now stream to the event hub in real-time.
 	7	Stream Microsoft (365) Defender Logs to Event Hub: In the Microsoft (365) Defender portal:
-	◦	Go to  Settings > Microsoft Defender XDR > Streaming API
-	◦	Click Add . Configure as follows:
-	▪	Name: e.g. defender-to-eventhub.
-	▪	Destination: Forward events to Azure Event Hub. Provide the Event Hub Namespace Resource ID and Event Hub Name (for the arouhan-psiem namespace and security-logs-hub we created). This grants Defender permission to send to the hub.
+	    ◦	Go to  Settings > Microsoft Defender XDR > Streaming API
+	    ◦	Click Add . Configure as follows:
+	        ▪	Name: e.g. defender-to-eventhub.
+	        ▪	Destination: Forward events to Azure Event Hub. Provide the Event Hub Namespace Resource ID and Event Hub Name (for the arouhan-psiem namespace and security-logs-hub we created). This grants Defender permission to send to the hub.
 			Event Hub Namespace Resource ID:
 			Find this in the Azure Portal under: 	Event Hubs > arouhan-psiem > Properties
 
-	▪	Event Types: Select the telemetry types to stream. For example:
-	▪	Device events (DeviceEvents, DeviceFileEvents, DeviceNetworkEvents, DeviceLogonEvents, DeviceProcessEvents.)
-	▪	Alert Info/Evidence (if you want alerts via streaming as well – though alerts will also be pulled via Graph, streaming them can provide real-time duplicates)
-	▪	Email events (EmailEvents, EmailAttachmentInfo, etc., if Defender for Office 365 is in use)
-	▪	Choose all relevant tables needed for your monitoring. (These correspond to the Advanced Hunting schema events.)
-	▪	Save the configuration. Microsoft Defender for Endpoint/Office/Identity will now push the selected event telemetry to the Event Hub in real-time.
+	    ◦	Event Types: Select the telemetry types to stream. For example:
+	        ▪	Device events (DeviceEvents, DeviceFileEvents, DeviceNetworkEvents, DeviceLogonEvents, DeviceProcessEvents.)
+	        ▪	Alert Info/Evidence (if you want alerts via streaming as well – though alerts will also be pulled via Graph, streaming them can provide real-time duplicates)
+	        ▪	Email events (EmailEvents, EmailAttachmentInfo, etc., if Defender for Office 365 is in use)
+	        ▪	Choose all relevant tables needed for your monitoring. (These correspond to the Advanced Hunting schema events.)
+	    ◦	Save the configuration. Microsoft Defender for Endpoint/Office/Identity will now push the selected event telemetry to the Event Hub in real-time.
 
 ```
 Note: The Streaming API sends raw events in a JSON structure under a records array for each message. QRadar’s DSM for Microsoft 365 Defender (Advanced Hunting events) will parse these events, but ensure your QRadar is on a recent DSM version that supports these event types.
@@ -110,10 +110,7 @@ This log source pulls Azure AD sign-in and audit logs from the Event Hub:
 	•	Format Azure Linux Events to Syslog: No (not needed for JSON logs).
 	•	Convert VNet Flow Logs to IPFIX: No.
 	•	Use As A Gateway Log Source: No.
-	•	Proxy Settings: If QRadar requires a proxy to reach Azure (as in many corporate networks), configure Use Proxy: Yes. For example:
-	◦	Proxy Host: XXX (replace with your arouhan proxy if different; this was used in the reference environment).
-	◦	Proxy Port: 3128.
-	◦	Proxy Username/Password: (if required by your proxy; often left blank for unauthenticated proxies).
+	•	Proxy Settings: If QRadar requires a proxy to reach Azure (as in many corporate networks), configure Use Proxy: Yes. 
 	•	EPS Throttle: e.g. 10000 EPS (events per second) – a high cap to ensure QRadar doesn’t drop bursts of events.
 	•	Click Test Connection. If configured correctly, QRadar should show a successful connection to the event hub. Then Save the log source.
 <small>After a few minutes, this log source should start receiving Azure AD events. In the Log Activity tab, verify events labeled with the “Microsoft Entra ID” DSM are appearing.</small>
