@@ -147,26 +147,26 @@ This log source polls the Microsoft 365 Unified Audit Log (UAL) for events acros
 
 	•	Log Source Name: M365 @ M365arouhanprod
 	•	Log Source Type: Microsoft Office 365
-	◦	In QRadar’s Log Source Management (Admin > Data Sources > Log Sources > Add), select Microsoft Office 365. This DSM collects unified audit log events via the Office 365 REST API protocol in QRadar 7.4+ (IBM Docs).
+	    ◦	In QRadar’s Log Source Management (Admin > Data Sources > Log Sources > Add), select Microsoft Office 365. This DSM collects unified audit log events via the Office 365 REST API protocol in QRadar 7.4+ (IBM Docs).
 	•	Protocol Type: Office 365 REST API
 	•	Log Source Identifier: arouhan-MS365-Prod
 	•	Tenant ID: [arouhan Tenant ID]
 	•	Client ID: [From QRadar-arouhan-GraphAPI-Collector]
 	•	Client Secret: [From QRadar-arouhan-GraphAPI-Collector]
 	•	Event Filter:
-	◦	Azure Active Directory (sign-in and directory audit events)
-	◦	Exchange (Exchange Online events, e.g., mailbox access)
-	◦	SharePoint (SharePoint and OneDrive activities)
-	◦	General (Teams, PowerBI, Stream, and other services not in dedicated categories)
-	◦	DLP (Data Loss Prevention events)
-	•	Use Proxy: Yes
-	◦	Proxy IP/Hostname: XXXX.com
-	◦	Proxy Port: 3128
-	◦	Proxy Username/Password: [Leave blank or specify]
+	    ◦	Azure Active Directory (sign-in and directory audit events)
+	    ◦	Exchange (Exchange Online events, e.g., mailbox access)
+	    ◦	SharePoint (SharePoint and OneDrive activities)
+	    ◦	General (Teams, PowerBI, Stream, and other services not in dedicated categories)
+	    ◦	DLP (Data Loss Prevention events)
+	•	Use Proxy: Yes (if needed)
+	    ◦	Proxy IP/Hostname: XXXX.com
+	    ◦	Proxy Port: 3128
+	    ◦	Proxy Username/Password: [Leave blank or specify]
 	•	Advanced Options:
-	◦	Management Activity API URL: https://manage.office.com
-	◦	Azure AD Sign-in URL: https://login.microsoftonline.com
-	◦	EPS Throttle: 5000
+	    ◦	Management Activity API URL: https://manage.office.com
+	    ◦	Azure AD Sign-in URL: https://login.microsoftonline.com
+	    ◦	EPS Throttle: 5000
 	•	Test Connection: Verify QRadar fetches audit logs (“Connected. Waiting for events…”).
 	•	Verification: Check Log Activity for Microsoft Office 365 DSM events (5–30 minute delay) (Microsoft Learn). Use:
 
@@ -213,13 +213,13 @@ Monitor Azure and QRadar to ensure proper event collection:
 	▪	Microsoft Office 365 (audit logs via Office 365 REST API).
 	◦	Run this AQL query to check event counts:
 
-    ```bash
+    
 	SELECT logsourcetype, COUNT(*)
 	FROM events
 	WHERE logsourcetype IN ('Microsoft Entra ID', 'Microsoft 365 Defender', 'Microsoft Office 365')
 	GROUP BY logsourcetype
 	LAST 15 MINUTES
-    ```
+    
 
 	•	In Azure:
 	◦	Check Event Hub metrics (Azure Portal > Event Hubs > [your hub] > Metrics) for incoming messages (Microsoft Learn).
@@ -245,11 +245,5 @@ Notes and Best Practices
 	•	Performance: Monitor EPS for Event Hub logs in QRadar. Filter noisy categories in Azure Diagnostic Settings if needed. The 5-minute polling interval for Office 365 REST API balances timeliness and API load.
 	•	Security: Rotate the Azure AD app’s Client Secret periodically and restrict access to the app (QRadar-arouhan-GraphAPI-Collector) due to its high permissions.
 	•	Future-Proofing: Add AuditLog.Read.All permission to prepare for potential Graph API adoption. Monitor Microsoft and IBM for API or DSM updates (Microsoft Learn, IBM App Exchange).
-Sources
-	•	IBM Docs - Microsoft Office 365 DSM
-	•	IBM Docs - Microsoft 365 Defender DSM
-	•	Microsoft Learn - Office 365 Management Activity API
-	•	Microsoft Learn - Azure Event Hubs Monitoring
-	•	Reddit - QRadar Office 365 Log Issues
 
 ```
