@@ -1,6 +1,6 @@
 This guide explains how to resolve authentication issues when accessing an Amazon EKS cluster using AWS IAM Identity Center (formerly AWS SSO) temporary credentials. It covers the root cause and two main solutions: one integrated into Terraform during cluster creation, and another for existing clusters using manual AWS CLI steps (with options for read-only or admin access).
 
-** Root Cause of the Issue
+** Root Cause of the Issue **
 When deploying an EKS cluster (v1.30+ like), access is managed via Access Entries (not the deprecated aws-auth ConfigMap). The SSO-assumed IAM role (e.g., arn:aws:iam::869935083575:role/aws-reserved/sso.amazonaws.com/eu-west-2/AWSReservedSSO_HRZ-Project_5cefae3674499372627) isn't automatically added due to its temporary nature. This causes "You must be logged in to the server" errors in kubectl, and also lack visibilities for aws Portal. 
 
 
