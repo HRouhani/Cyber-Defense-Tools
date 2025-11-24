@@ -1,6 +1,12 @@
-at first when i deployed the cluster i got:
+This guide explains how to resolve authentication issues when accessing an Amazon EKS cluster using AWS IAM Identity Center (formerly AWS SSO) temporary credentials. It covers the root cause and two main solutions: one integrated into Terraform during cluster creation, and another for existing clusters using manual AWS CLI steps (with options for read-only or admin access).
 
-hrouhan@hrz kubernetes-EKS (main*)$ aws eks list-access-entries --cluster-name security-team --region XXXX
+** Root Cause of the Issue
+When deploying an EKS cluster (v1.30+ like), access is managed via Access Entries (not the deprecated aws-auth ConfigMap). The SSO-assumed IAM role (e.g., arn:aws:iam::869935083575:role/aws-reserved/sso.amazonaws.com/eu-west-2/AWSReservedSSO_HRZ-Project_5cefae3674499372627) isn't automatically added due to its temporary nature. This causes "You must be logged in to the server" errors in kubectl, and also lack visibilities for aws Portal. 
+
+
+Initial check showing the missing entry:
+
+aws eks list-access-entries --cluster-name security-team --region XXXX
 {
     "accessEntries": [
         "arn:aws:iam::XXXXXXXXXXXXXXX:role/aws-service-role/eks.amazonaws.com/AWSServiceRoleForAmazonEKS",
@@ -9,17 +15,23 @@ hrouhan@hrz kubernetes-EKS (main*)$ aws eks list-access-entries --cluster-name s
 }
 
 
+** Option 1: Solve During Terraform Deployment (Recommended for New Clusters)
+
 The issue is that my SSO-assumed IAM role (arn:aws:iam::XXXXXXXXXXXXXX:role/AWSReservedSSO_HRZ-Project_5cefae3674499372627) is not listed in the cluster's access entries, as shown in our list-access-entries output. This prevents authentication via kubectl, even though we created the cluster. For EKS clusters version 1.30+, access is managed via Access Entries rather than the old aws-auth ConfigMap, and the cluster creator's role isn't always auto-added when using SSO (due to the temporary session nature). To fix this without needing additional IAM permissions, we have 2 options, whether solve it during the terraform deployment which i did here and if the cluster already exist we need to use manual option as I explained in the next part: 
 
 to solve the issue, i used following line in 02-eks-cluster.tf
 
+```
 enable_cluster_creator_admin_permissions = true
+```
+
+
 
 This tells the EKS module to automatically create an Access Entry for the IAM principal (our SSO role) that runs terraform apply, mapping it to the system:masters Kubernetes group for full admin access.
 
 to confirm we can run again the list-access-entries
 
-hrouhan@hrz kubernetes-EKS (main*)$ aws eks list-access-entries --cluster-name $(terraform output -raw cluster_name) --region $(terraform output -raw region)
+test@test kubernetes-EKS (main*)$ aws eks list-access-entries --cluster-name $(terraform output -raw cluster_name) --region $(terraform output -raw region)
 {
     "accessEntries": [
         "arn:aws:iam::869935083575:role/aws-reserved/sso.amazonaws.com/eu-west-2/AWSReservedSSO_HRZ-Project_5cefae3674499372627",
@@ -39,9 +51,9 @@ This explicitly maps our SSO role as cluster admin.
 
 
 
-** Option 2:  What if the cluster already deployed ** 
+** Option 2: Solve for an Existing Cluster (Manual Steps) ** 
 
-If the EKS cluster already exist, we can follow these steps to get ReadOnly or Admin Access to the cluster. To solve this issue, we need to add our SSO IAM role as a read-only (if needed Admin access) user via EKS Access Entries.
+For already-deployed clusters, use AWS CLI to add your SSO role. These steps grant read-only access by default (using AmazonEKSViewPolicy for viewing resources like pods/nodes without edits). Adjust for admin or namespace-specific as noted.
 
 
 1. Retrieve Our SSO IAM Role ARN
