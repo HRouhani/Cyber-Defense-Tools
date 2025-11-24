@@ -27,8 +27,6 @@ output "cluster_name" {
 /* output "ec2_linux_public_ip" {
   value = <<EOT
 
-  
-ssh -o StrictHostKeyChecking=no -i ${var.ssh_key_path} kali@${module.ec2_instance.public_ip}
 
 
 EOT
@@ -85,6 +83,27 @@ b. EC2 Connect
     *** aws ec2-instance-connect ssh --instance-id <EC2 Instance ID> 
 
 
+
+
+** for Testing purpose an Nginx webserver has been deployed. This setup is a simple web server demonstration using Nginx, a popular open-source HTTP server. The Pod runs an unprivileged Nginx container that serves a default welcome page over HTTP. The Service makes it accessible from outside the cluster via an AWS Elastic Load Balancer (ELB), since we're on EKS (Amazon's managed Kubernetes service).
+
+
+- list all pods
+  kubectl get pods -A
+
+- describe the service
+  kubectl -n security-team describe svc nginx-demo
+
+- describe the Pod
+  kubectl -n security-team describe pod nginx-demo-XXXXXXXXXXXXXX
+
+
+- to get the external IP address to connect from outside over port 80
+  kubectl -n security-team get svc nginx-demo
+
+
+- to get a shell on the pod
+  kubectl exec -it deployment/nginx-demo -- /bin/bash
 
 EOT
 }

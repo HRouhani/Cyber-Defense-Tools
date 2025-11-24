@@ -1,43 +1,45 @@
 at first when i deployed the cluster i got:
 
-hrouhan@hrz kubernetes-EKS (main*)$ aws eks list-access-entries --cluster-name security-team-do9h --region us-east-1
+hrouhan@hrz kubernetes-EKS (main*)$ aws eks list-access-entries --cluster-name security-team --region XXXX
 {
     "accessEntries": [
-        "arn:aws:iam::869935083575:role/aws-service-role/eks.amazonaws.com/AWSServiceRoleForAmazonEKS",
-        "arn:aws:iam::869935083575:role/security-team-iam-role"
+        "arn:aws:iam::XXXXXXXXXXXXXXX:role/aws-service-role/eks.amazonaws.com/AWSServiceRoleForAmazonEKS",
+        "arn:aws:iam::XXXXXXXXXXXXX:role/security-team-iam-role"
     ]
 }
 
 
-iThe issue is that your SSO-assumed IAM role (arn:aws:iam::869935083575:role/AWSReservedSSO_MHPFoundation-ProjectDeveloper_5cefae57606b2022) is not listed in the cluster's access entries, as shown in your list-access-entries output. This prevents authentication via kubectl, even though you created the cluster. For EKS clusters version 1.30+ (yours is 1.34), access is managed via Access Entries rather than the old aws-auth ConfigMap, and the cluster creator's role isn't always auto-added when using SSO (due to the temporary session nature). To fix this without needing additional IAM permissions, update your Terraform configuration to explicitly grant admin access to the cluster creator (your SSO role).
-
+The issue is that my SSO-assumed IAM role (arn:aws:iam::XXXXXXXXXXXXXX:role/AWSReservedSSO_HRZ-Project_5cefae3674499372627) is not listed in the cluster's access entries, as shown in our list-access-entries output. This prevents authentication via kubectl, even though we created the cluster. For EKS clusters version 1.30+, access is managed via Access Entries rather than the old aws-auth ConfigMap, and the cluster creator's role isn't always auto-added when using SSO (due to the temporary session nature). To fix this without needing additional IAM permissions, we have 2 options, whether solve it during the terraform deployment which i did here and if the cluster already exist we need to use manual option as I explained in the next part: 
 
 to solve the issue, i used following line in 02-eks-cluster.tf
 
 enable_cluster_creator_admin_permissions = true
 
-This tells the EKS module to automatically create an Access Entry for the IAM principal (your SSO role) that runs terraform apply, mapping it to the system:masters Kubernetes group for full admin access.
+This tells the EKS module to automatically create an Access Entry for the IAM principal (our SSO role) that runs terraform apply, mapping it to the system:masters Kubernetes group for full admin access.
 
 to confirm we can run again the list-access-entries
 
 hrouhan@hrz kubernetes-EKS (main*)$ aws eks list-access-entries --cluster-name $(terraform output -raw cluster_name) --region $(terraform output -raw region)
 {
     "accessEntries": [
-        "arn:aws:iam::869935083575:role/aws-reserved/sso.amazonaws.com/eu-west-1/AWSReservedSSO_MHPFoundation-ProjectDeveloper_5cefae57606b2022",
+        "arn:aws:iam::869935083575:role/aws-reserved/sso.amazonaws.com/eu-west-2/AWSReservedSSO_HRZ-Project_5cefae3674499372627",
         "arn:aws:iam::869935083575:role/aws-service-role/eks.amazonaws.com/AWSServiceRoleForAmazonEKS",
         "arn:aws:iam::869935083575:role/security-team-iam-role"
     ]
 }
 
 
-it will automatically update the kubeconfig file during the cluster creation
+it will automatically update the kubeconfig file during the cluster creation. Otherwise we can update the kubeconfig file ourselve again:
+
+kubectl --kubeconfig ./kubeconfig create namespace security-team
 
 
-This explicitly maps your SSO role as cluster admin.
+This explicitly maps our SSO role as cluster admin.
 
 
 
-** What if the cluster already deployed ** 
+
+** Option 2:  What if the cluster already deployed ** 
 
 If the EKS cluster already exist, we can follow these steps to get ReadOnly or Admin Access to the cluster. To solve this issue, we need to add our SSO IAM role as a read-only (if needed Admin access) user via EKS Access Entries.
 
@@ -45,12 +47,12 @@ If the EKS cluster already exist, we can follow these steps to get ReadOnly or A
 1. Retrieve Our SSO IAM Role ARN
 
 ```
-aws iam get-role --role-name AWSReservedSSO_MHPFoundation-ProjectDeveloper_5cefae57606b2022 --query Role.Arn --output text
+aws iam get-role --role-name AWSReservedSSO_HRZ-Project_5cefae3674499372627 --query Role.Arn --output text
 ```
 
 Expected output: Something like
 
-arn:aws:iam::761135083533:role/aws-reserved/sso.amazonaws.com/eu-west-2/AWSReservedSSO_HRZEstablishment-Project_5degfe43096b2044
+arn:aws:iam::761135083533:role/aws-reserved/sso.amazonaws.com/eu-west-2/AWSReservedSSO_HRZ-Project_5cefae3674499372627
 
 
 
