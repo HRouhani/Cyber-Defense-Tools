@@ -10,9 +10,7 @@ The cluster will be installed by default in us-east-1 region. If you want to dep
 
 **You do not need to have a user in IAM necessarily, however if you have could be better**
   
-  You can use "security-team" group which has AdministratorAccess permission policies. 
-  Go to your user in IAM, then in "Security credentials" part, create Access Keys for the Terminal Access. You need the "Key ID" and "Secret Access Key".
-
+I used temporary SSO access here.
 
 
 
@@ -60,34 +58,10 @@ terraform destroy -auto-approve
     for deleting any pods, you need to delete the corresponding deployments
 
     kubectl get deployments -A
-    kubectl delete deployment aws-vote-back
+    kubectl delete deployment nginx-demo
     
 
-After deploying the cluster, you might need to check the pods/nodes directly from console (logged with your user). If you had issue for seeing the resources, you might need to do the following (https://stackoverflow.com/questions/70787520/your-current-user-or-role-does-not-have-access-to-kubernetes-objects-on-this-eks)
-
-kubectl edit configmap aws-auth -n kube-system
-
-here is how mine looks like:
-
-```
-apiVersion: v1
-data:
-  mapRoles: |
-    - groups:
-      - system:bootstrappers
-      - system:nodes
-      rolearn: arn:aws:iam::072487201929:role/security-team-iam-role
-      username: system:node:{{EC2PrivateDNSName}}
-kind: ConfigMap
-metadata:
-  creationTimestamp: "2023-08-30T18:19:40Z"
-  name: aws-auth
-  namespace: kube-system
-  resourceVersion: "1024"
-  uid: xxxxxxx-xxxxxxxxx-xxxx-xxxxxxxx
-```
-
-Then you need to login directly with your IAM user to aws to see the resouces!
+After deploying the cluster, you might need to check the pods/nodes directly from console (logged with your user). 
 
 Important:
 
@@ -97,4 +71,3 @@ Important:
 
 
 
-** to connect to AWS through cli: **
