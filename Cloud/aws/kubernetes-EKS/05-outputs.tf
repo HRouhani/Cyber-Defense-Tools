@@ -88,6 +88,16 @@ b. EC2 Connect
 ** for Testing purpose an Nginx webserver has been deployed. This setup is a simple web server demonstration using Nginx, a popular open-source HTTP server. The Pod runs an unprivileged Nginx container that serves a default welcome page over HTTP. The Service makes it accessible from outside the cluster via an AWS Elastic Load Balancer (ELB), since we're on EKS (Amazon's managed Kubernetes service).
 
 
+- make sure about the region and also the kubeconfig
+
+  export AWS_REGION=Your-Region
+  export KUBECONFIG=./kubeconfig
+
+- if needed you can re-create the kubeconfig file by
+  
+  aws eks --region Your-Region update-kubeconfig --name Cluster-name-from-above-Output --kubeconfig ./kubeconfig
+  
+
 - list all pods
   kubectl get pods -A
 

@@ -1,4 +1,4 @@
-# Microsoft 365 and Defender XDR Log Integration with IBM QRadar
+# Microsoft 365 and Defender XDR Log Integration with Siem tool like IBM QRadar
 
 This document outlines the integration of Microsoft 365 (productivity suite), Microsoft Defender XDR (security alerts), and Microsoft Entra ID (identity logs) into SIEM solutions like IBM QRadar which can be used with the similar methods for most of the other SIEM solutions like splunk. It uses a hybrid approach: Azure Event Hubs for real-time streaming of Entra ID and Defender XDR events, and the Office 365 Management Activity API for polling unified audit logs. The configuration uses a client secret for authentication (preferred certificates).
 
@@ -19,17 +19,17 @@ Register an application in Microsoft Entra ID (Azure AD) for QRadar to authentic
 
 	3	Assign API Permissions (API Permissions > Add a permission):
 
-	◦	Microsoft Graph > Application permissions:
-	    ⁃	SecurityEvents.Read.All (for Microsoft Defender XDR alerts via Graph Security API)
-	    ⁃	Optional (if using Entra ID P2): Directory.Read.All, IdentityRiskyUser.Read.All, IdentityRiskEvent.Read.All, Reports.Read.All
-	    ⁃	Optional (for future-proofing audit log access via Graph): AuditLog.Read.All
+        ◦	Microsoft Graph > Application permissions:
+            ⁃	SecurityEvents.Read.All (for Microsoft Defender XDR alerts via Graph Security API)
+            ⁃	Optional (if using Entra ID P2 or E5): Directory.Read.All, IdentityRiskyUser.Read.All, IdentityRiskEvent.Read.All, Reports.Read.All
+            ⁃	Optional (for future-proofing audit log access via Graph): AuditLog.Read.All
 
-	◦	APIs my organization uses > Search for Office 365 Management APIs > Application permissions:
-	    ⁃	ActivityFeed.Read (to read unified audit logs)
-	    ⁃	ActivityFeed.ReadDlp (to read DLP events)
-			  # note:  These permissions are not part of the Microsoft Graph API; they are listed under the Office 365 Management APIs in the Azure AD App Registration portal, and is for Microsoft 365 Unified Audit Log via Office 365 REST API which still uses Office 365 REST API
+        ◦	APIs my organization uses > Search for Office 365 Management APIs > Application permissions:
+            ⁃	ActivityFeed.Read (to read unified audit logs)
+            ⁃	ActivityFeed.ReadDlp (to read DLP events)
+                # note:  These permissions are not part of the Microsoft Graph API; they are listed under the Office 365 Management APIs in the Azure AD App Registration portal, and is for Microsoft 365 Unified Audit Log via Office 365 REST API which still uses Office 365 REST API
 
- 		# After selecting the permissions, Grant admin consent for the tenant so that the app can access these scopes without user interaction. This registration will be used by QRadar to pull M365 audit logs and Defender alerts via Graph API.
+            # After selecting the permissions, Grant admin consent for the tenant so that the app can access these scopes without user interaction. This registration will be used by QRadar to pull M365 audit logs and Defender alerts via Graph API.
 
 ## Enable Microsoft 365 Logging Services
 
