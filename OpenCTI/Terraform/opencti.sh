@@ -46,9 +46,23 @@ echo "[+] Setting vm.max_map_count..."
 echo "vm.max_map_count=1048575" | sudo tee -a /etc/sysctl.conf
 sudo sysctl -w vm.max_map_count=1048575
 
+### UUIDs for connectors
+uuid() { cat /proc/sys/kernel/random/uuid; }
+
+XTM_COMPOSER_ID="$(uuid)"
+CONNECTOR_IMPORT_FILE_YARA_ID="$(uuid)"
+CONNECTOR_IMPORT_EXTERNAL_REFERENCE_ID="$(uuid)"
+CONNECTOR_OPENCTI_ID="$(uuid)"
+CONNECTOR_MITRE_ID="$(uuid)"
+
+
 ### CREATE .env FILE ###########################################
 echo "[+] Creating .env file..."
 cat <<EOF > "$ENV_FILE"
+COMPOSE_PROJECT_NAME=opencti
+OPENCTI_EXTERNAL_SCHEME=http
+OPENCTI_HOST=localhost
+OPENCTI_PORT=8080
 OPENCTI_ADMIN_EMAIL=admin@hrouhani.org
 OPENCTI_ADMIN_PASSWORD=hrouhani@OpenCTI-110
 OPENCTI_ADMIN_TOKEN=c75a53e7-c3eb-4410-a27a-2cc33c58c9de
@@ -67,6 +81,11 @@ CONNECTOR_IMPORT_FILE_STIX_ID=fa81161a-4300-49e2-9d5a-2265f2225c53
 CONNECTOR_EXPORT_FILE_TXT_ID=82aa8cb4-60dc-419e-af1d-cf81fc265c04
 CONNECTOR_IMPORT_DOCUMENT_ID=12d61164-1325-4f8d-9633-33017ea6c1bc
 CONNECTOR_ANALYSIS_ID=55b7849d-adfe-450f-9ef0-51fea9d9049a
+XTM_COMPOSER_ID=$XTM_COMPOSER_ID
+CONNECTOR_IMPORT_FILE_YARA_ID=$CONNECTOR_IMPORT_FILE_YARA_ID
+CONNECTOR_IMPORT_EXTERNAL_REFERENCE_ID=$CONNECTOR_IMPORT_EXTERNAL_REFERENCE_ID
+CONNECTOR_OPENCTI_ID=$CONNECTOR_OPENCTI_ID
+CONNECTOR_MITRE_ID=$CONNECTOR_MITRE_ID
 SMTP_HOSTNAME=localhost
 EOF
 
@@ -88,53 +107,6 @@ echo "[✓] OpenCTI is deployed and reachable at: http://$OPENCTI_PUBLIC_IP:8080
 
 sleep 60
 
-
-# Create add_connectors.sh inside /opt/openCTI/docker
-cat << 'EOF' > /opt/openCTI/docker/add_connectors.sh
-#!/bin/bash
-set -e
-
-COMPOSE_FILE="/opt/openCTI/docker/docker-compose.yml"
-MITRE_BLOCK="
-  connector-mitre:
-    image: opencti/connector-mitre:6.6.4
-    environment:
-      - OPENCTI_URL=http://opencti:8080
-      - OPENCTI_TOKEN=\${OPENCTI_ADMIN_TOKEN}
-      - CONNECTOR_ID=mitre-connector
-      - CONNECTOR_NAME=MITRE ATT&CK
-      - CONNECTOR_SCOPE=tool,report,malware,identity,campaign,intrusion-set,attack-pattern,course-of-action,x-mitre-data-source,x-mitre-data-component,x-mitre-matrix,x-mitre-tactic,x-mitre-collection
-      - CONNECTOR_RUN_AND_TERMINATE=false
-      - CONNECTOR_LOG_LEVEL=error
-      - MITRE_REMOVE_STATEMENT_MARKING=true
-      - MITRE_INTERVAL=7
-    restart: always
-    depends_on:
-      opencti:
-        condition: service_healthy
-"
-
-echo "[+] Adding MITRE connector to docker-compose.yml..."
-
-# Skip if already added
-if grep -q "connector-mitre:" "$COMPOSE_FILE"; then
-  echo "[i] MITRE connector already exists. Skipping..."
-else
-  awk -v block="$MITRE_BLOCK" '
-    BEGIN { printed=0 }
-    /^volumes:/ && !printed {
-      print block
-      printed=1
-    }
-    { print }
-  ' "$COMPOSE_FILE" > "${COMPOSE_FILE}.tmp" && mv "${COMPOSE_FILE}.tmp" "$COMPOSE_FILE"
-  echo "[+] MITRE connector added."
-fi
-
-echo "[+] Restarting OpenCTI with new connector..."
-cd /opt/openCTI/docker
-docker-compose up -d
-EOF
 
 chmod +x /opt/openCTI/docker/add_connectors.sh
 bash /opt/openCTI/docker/add_connectors.sh
