@@ -1,0 +1,338 @@
+The architecture which usually being used is as follow:
+
+   - DCs/Windows servers (WEF/WinRM → central) -> WEC (Windows Event Collector) (could be the case SIEM has agent here) → SIEM (TLS 6514)
+
+```
+Domain Controllers (DCs) / Windows Servers
+        |
+        |  WinRM (port 5985 or 5986)
+        v
+Windows Event Collector (WEC) — optional: WinCollect agent installed
+        |
+        |  Syslog over TLS (port 6514)
+        v
+        SIEM
+```
+
+The idea is to use source-initiated WEF (clients push to collector), which is usually the most scalable/flexible mode for enterprise deployment.
+
+In domain scenarios, even when HTTP is selected, WEF session auth/encryption is typically via Kerberos (mutual auth), while HTTPS/cert mode is mainly needed when Kerberos/mutual auth is not feasible.
+
+A GPO setting (Configure target Subscription Manager) tells each source where the collector is:
+Server=http://<wec-fqdn>:5985/wsman/SubscriptionManager/WEC,... (or HTTPS/5986).
+
+Source sends matching events to WEC using WinRM/WEF. WinRM/WEF on 5985 (HTTP) or 5986 (HTTPS) x(default WinRM ports).
+
+WEC subscription XML decides which events are accepted. Accepted events are written into Forwarded Events (on WEC). On the collector, incoming events are written to local logs (usually Forwarded Events). 
+
+SIEM agent reads Forwarded Events and forwards to the SIEM.
+
+
+explanation: What “Forwarded Events” really is
+
+We can think of Forwarded Events on WEC as the aggregated inbox of events received from all subscribed sources.
+
+- The WEC keeps bookmark + heartbeat per source/subscription to resume where it stopped.
+
+- If collector is unreachable, source machine’s own event logs act as temporary buffer (until overwritten).
+
+
+Subscription content (On the collector: Event Viewer → Subscriptions → <your subscription> (e.g., BasisEvents) → Properties.) can be sent as:
+
+- RenderedText (default, larger size),
+
+- Events/binary XML (smaller, higher EPS efficiency).
+
+So yes: if WinCollect reads only Forwarded Events, DC audit policy on WEC itself is not needed for DC telemetry.
+
+
+
+
+1) What you built 
+
+You implemented a Windows Event Forwarding (WEF) architecture where Domain Controllers (and other Windows servers) forward selected events via WinRM (5985/5986) to a central Windows Event Collector (WEC), and a possible SIEM agent (for example WinCollect agent) reads the collected events (mainly from Forwarded Events) and sends them usually via Syslog or Syslog over TLS (6514) to SIEM.
+
+
+2) The real “control points” (where decisions are made)
+
+
+To fully understand WEF + WinCollect, we need to separate three different decision layers that many teams mixed up:
+
+
+**Layer A — Audit Policy on the source(DC)**
+
+The first step is to enable what we need in terms of audit in our DC which DC SOC-focused started profile usually looks like:
+
+- Account Logon (Credential validation/Kerberos-related)
+
+- Account Management (user/group/computer changes)
+
+- Logon/Logoff (logon, lockout, special logon, etc.)
+
+- Policy Change (audit/auth policy changes)
+
+- Detailed Tracking (especially process creation)
+
+- System (security state/integrity)
+
+- DS Access for DC-specific directory access/change telemetry
+
+
+This is controlled by:
+
+Advanced Audit Policy / Audit Policy (usually via GPO)
+
+- Computer Configuration\Windows Settings\Security Settings\Advanced Audit Policy Configuration\System Audit Policies
+
+  and then, Enable the subcategories you need (Success/Failure as required).
+
+If an event is never generated on the DC (because auditing is disabled), it can never be forwarded. Therefore, it recommended to Create a dedicated GPO for DC audit generation
+
+Now to be able to control, the current Audit settings, we can use AuditPol tool:
+
+```
+auditpol /list /subcategory:* /v
+auditpol /get /category:*
+auditpol /get /category:* /r
+```
+
+- auditpol /get shows what is effectively enabled/disabled.
+
+- auditpol /list shows subcategory names/GUIDs (useful for precise tuning).
+
+
+**Layer B — Windows Event Collector(WEC)**
+
+In this machine, several configuration is important. First  go through some concepts:
+
+- Event Viewer on the Windows Event Collector (WEC) server is the interface used to view and manage logs.
+
+- Inside Event Viewer, there’s a node called “Subscriptions” — this is where Windows Event Forwarding (WEF) subscriptions are created and managed.
+
+- Each subscription defines a filter and scope for which events from which machines (e.g., Domain Controllers, member servers) should be collected.
+
+
+A WEF subscription is a set of instructions hosted on the WEC that:
+
+- Specifies which source computers should send events (e.g., all DCs).
+
+- Defines an XML/XPath query that tells what kinds of events should be collected (e.g., only logons, or only errors).
+
+- Decides how events are transported (HTTP/HTTPS), how often, and in what format (RenderedText or Events format).
+
+
+There are two modes (visible in Subcription portal):
+
+- Collector Initiated:	WEC reaches out to source machines to pull logs (requires network access).
+- Source Initiated:	Source computers (DC in our case) push logs to WEC based on policy (most common in domains).
+
+
+**What to Configure in WEC (Windows Event Collector)**
+
+- Open Event Viewer on the WEC server
+Navigate to:
+Event Viewer → Subscriptions
+
+- Create a New Subscription
+
+Right-click → Create Subscription
+
+Name: e.g., DC-Security-Logs
+
+Subscription Type: Collector initiated or Source initiated (usually source initiated is easier if using GPO)
+
+Destination log: ForwardedEvents
+
+Event Delivery Optimization: Minimize Latency (for near real-time) or Normal (for efficiency)
+
+- Set Computers to Receive Logs From
+
+Click Select Computers → Add the DCs or other source servers (or use security group)
+
+- Set Which Events to Collect
+
+Click Select Events → Go to the XML tab, check Edit query manually
+
+Paste a well-defined XPath/XML filter
+Example (to collect key logs from Security log):
+
+(WEF subscription on WEC) defines the subscription query (XML/XPath) that source machines (DC) use for forwarding; therefore it determines which events reach the collector’s destination log (usually ForwardedEvents).
+
+You can repeat <Query> blocks for System, Application, etc., if needed.
+
+Use XML when:
+
+- You want to capture only specific Event IDs (e.g., logon, process creation)
+
+- You need better performance and smaller payloads
+
+- You want SOC-quality or production-grade tuning
+
+
+This is controlled by:
+
+Event Viewer → Subscriptions → (Subscription) → Select Events → XML
+
+This filter decides what the collector accepts from the source.
+
+
+To view the ForwardedEvents log on your Windows Event Collector (WEC) machine, follow one of these methods:
+
+```
+Event Viewer →  Windows logs → Forwarded Events
+```
+
+or using PowerShell like:
+
+```
+Get-WinEvent -ListLog ForwardedEvents
+
+Get-WinEvent -LogName ForwardedEvents -MaxEvents 20 | Format-List TimeCreated, ProviderName, Id, Message
+```
+
+
+Troubleshooting:
+
+In order to find out if we get the needed logs and being saved where we need like Forwarded Events, we can use following commands:
+
+```
+wecutil es
+``` 
+
+Lists the names of all event subscriptions currently configured on the WEC.
+
+Then based on the outcome of the previous part, we do:
+
+```
+wecutil gs "DC-Logon-Audit"
+```
+
+What it does:
+
+Retrieves the full configuration of the specified subscription.
+
+Includes:
+
+- Description
+
+- Subscription type (Source Initiated or Collector Initiated)
+
+- Delivery mode (Push, Pull, Minimize Latency, etc.)
+
+- Destination log (usually ForwardedEvents)
+
+- Event Query/Filter (XML XPath)
+
+- Selected channels (Security, System, etc.)
+
+- Source computers or allowed groups
+
+- Protocol info (HTTP/HTTPS)
+
+- Format (RenderedText or Events)
+
+
+Extra we can alo inspect the forwarded Events log:
+
+```
+Inspect Forwarded Events log
+```
+
+
+
+
+**Layer C — “What events are sent to SIEM?”  (configuration on the collector)**
+
+This is controlled by:
+
+SIEM “Log Source” config: which local logs it reads (Forwarded Events, Security, System, Application, etc.)
+
+
+
+So baically the Subscription decides what gets into Forwarded Events. SIEM agent decides what gets from Forwarded Events (and/or other logs) into SIEM.
+Audit Policy decides what even exists upstream.
+
+
+***********
+
+Now I write here a summary of the whole things from different perspective:
+
+
+**🖥 1. Domain Controllers / Windows Servers (the Sources)**
+
+- Role: Generate Windows Event Logs (Security, System, etc.)
+
+- Act as WEF Clients: They forward selected logs to the collector.
+
+- Protocol Used: WinRM (Windows Remote Management) is the underlying protocol used by WEF to deliver logs.
+
+- Direction: Logs are pushed from DCs to the WEC.
+
+- Initiation Model: You use Source-Initiated Subscriptions, meaning the DC connects to the WEC, not the other way around.
+
+
+What happens here:
+
+- GPO tells the DC:
+  “Hey, forward your logs to this WEC endpoint: http://win005:5985/wsman/SubscriptionManager/WEC.”
+
+   DC uses WinRM to send event data to the WEC collector.
+
+
+
+**🖥 2. Windows Event Collector (WEC) (The Receiver)**
+
+- Role: Receives events from many sources (like DCs).
+
+- Has Subscriptions: These define which logs to accept, from whom, and what to store.
+
+- Stores Logs: Most commonly to the Forwarded Events log.
+
+- Optional: A SIEM agent (for example WinCollect agent in Qradar) on this system reads Forwarded Events and ships them to SIEM.
+
+
+So What’s the Role of WinRM?
+
+- WinRM is the transport layer used by WEF to transmit logs.
+
+- Runs on port 5985 (HTTP) or 5986 (HTTPS).
+
+- It's required on both ends:
+
+   On DC: to send logs (as a client)
+
+   On WEC: to accept and process incoming WinRM connections
+
+
+By default, only system processes with proper permissions can bind to HTTP/HTTPS listener endpoints like:
+
+- http://+:5985/wsman/
+
+- https://+:5986/wsman/
+
+
+If this binding fails, WEF source-initiated push will silently break — the DC will try to send logs, but the WEC won’t respond/listen properly. To solve this issue, we can use following commands:
+
+```
+netsh http delete urlacl url=http://+:5985/wsman/
+netsh http add urlacl url=http://+:5985/wsman/ sddl=D:(A;;GX;;;S-1-5-80-569256582-2953403351-2909559716-1301513147-412116970)(A;;GX;;;S-1-5-80-4059739203-877974739-1245631912-527174227-2996563517)
+
+netsh http delete urlacl url=https://+:5986/wsman/
+netsh http add url=https://+:5986/wsman/ sddl=D:(A;;GX;;;S-1-5-80-569256582-2953403351-2909559716-1301513147-412116970)(A;;GX;;;S-1-5-80-4059739203-877974739-1245631912-527174227-2996563517)
+```
+
+These commands configure the WEC (Windows Event Collector) server to allow the WinRM (Web Services for Management) service to listen for inbound WEF traffic on:
+
+- Port 5985 (HTTP)
+
+- Port 5986 (HTTPS)
+
+The urlacl entries are access control bindings for these URLs, allowing system services (like WinRM) to reserve and bind to the endpoint.
+
+
+Without these entries — especially in hardened environments — the WEC may fail to receive WEF events due to access restrictions or missing reservations.
+
+
+It grants GENERIC_EXECUTE (GX) rights to specific virtual service SIDs for the WinRM listener. These are long SIDs generated for trusted services via Service SID Hardening.
+
+They allow only specific services to bind to the URL endpoints.
