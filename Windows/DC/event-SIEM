@@ -238,6 +238,7 @@ Extra we can alo inspect the forwarded Events log:
 Inspect Forwarded Events log
 ```
 
+You can also run the powershell script "wec-troubleshoot.ps1" located at the same folder!
 
 
 
