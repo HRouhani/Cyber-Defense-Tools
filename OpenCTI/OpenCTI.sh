@@ -42,6 +42,9 @@ echo "[+] Setting vm.max_map_count..."
 echo "vm.max_map_count=1048575" | sudo tee -a /etc/sysctl.conf
 sudo sysctl -w vm.max_map_count=1048575
 
+### Generating a key as new verion of OpenCTI need ##########
+ENCRYPTION_KEY=$(openssl rand -base64 32)
+
 ### CREATE .env FILE ###########################################
 echo "[+] Creating .env file..."
 cat <<EOF > "$ENV_FILE"
@@ -49,6 +52,7 @@ OPENCTI_ADMIN_EMAIL=admin@hrouhani.org
 OPENCTI_ADMIN_PASSWORD=hrouhani@OpenCTI-110
 OPENCTI_ADMIN_TOKEN=c75a53e7-c3eb-4410-a27a-2cc33c58c9de
 OPENCTI_BASE_URL=http://$OPENCTI_PUBLIC_IP:8080
+OPENCTI_ENCRYPTION_KEY=$ENCRYPTION_KEY
 OPENCTI_HEALTHCHECK_ACCESS_KEY=32ddca9b-0cc3-4db0-a917-808ee7825487
 MINIO_ROOT_USER=5a6f3c20-ea2d-4d63-ac0d-abd9eb3b225d
 MINIO_ROOT_PASSWORD=bcf6a855-78d2-4fba-b2f7-c08e035943ce
