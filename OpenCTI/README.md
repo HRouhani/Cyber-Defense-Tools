@@ -132,4 +132,46 @@ connector-mitre:
    Nothing to change here unless you want to tweak the sync interval or give it a different connector ID.
 
  
+# 🛠️ OpenCTI / Docker / EC2 Troubleshooting Cheat Sheet
+
+## 🔎 1. Check containers (FIRST step)
+
+```bash
+docker ps
+docker ps -a
+```
+
+
+## 🔎 2. Check logs
+
+```bash
+docker logs <container>
+
+docker logs opencti_opencti_1
+docker logs opencti_opencti_1 --tail 100
+docker logs opencti_opencti_1 | grep error
+```
+
+## 3. Chec if port is listening
+
+```bash
+ss -tulpen | grep 8080
+```
+
+## 4. check locally on server
+
+```bash
+curl http://localhost:8080
+```
+
+
+## 5. Restart stack
+
+```bash
+docker-compose down
+docker-compose up -d
+
+docker-compose down -v
+docker-compose up -d
+```
 
