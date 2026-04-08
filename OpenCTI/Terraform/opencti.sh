@@ -55,6 +55,8 @@ CONNECTOR_IMPORT_EXTERNAL_REFERENCE_ID="$(uuid)"
 CONNECTOR_OPENCTI_ID="$(uuid)"
 CONNECTOR_MITRE_ID="$(uuid)"
 
+### Generating a key as new verion of OpenCTI need ##########
+ENCRYPTION_KEY=$(openssl rand -base64 32)
 
 ### CREATE .env FILE ###########################################
 echo "[+] Creating .env file..."
@@ -67,6 +69,7 @@ OPENCTI_ADMIN_EMAIL=admin@hrouhani.org
 OPENCTI_ADMIN_PASSWORD=hrouhani@OpenCTI-110
 OPENCTI_ADMIN_TOKEN=c75a53e7-c3eb-4410-a27a-2cc33c58c9de
 #OPENCTI_BASE_URL=http://$OPENCTI_PUBLIC_IP:8080
+OPENCTI_ENCRYPTION_KEY=$ENCRYPTION_KEY
 OPENCTI_BASE_URL=http://localhost:8080
 OPENCTI_HEALTHCHECK_ACCESS_KEY=32ddca9b-0cc3-4db0-a917-808ee7825487
 MINIO_ROOT_USER=5a6f3c20-ea2d-4d63-ac0d-abd9eb3b225d
