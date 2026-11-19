@@ -1,0 +1,17 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad=.28, nodesep=.48, ranksep=.65,
+        fontname="DejaVu Sans", fontsize=21, label="Figure 10.2 — Three excessive-agency failure modes", labelloc=t,
+        labeljust=c, splines=ortho];
+ node [fontname="DejaVu Sans", fontsize=12, shape=box, style="filled,rounded", penwidth=1.6, color="#26466C", fillcolor="#E8F0FC", margin=".22,.15"];
+ edge [color="#26466C", penwidth=2, arrowsize=.8];
+ 
+ input [label="Attacker / normal user\nrequest", fillcolor="#DCEEFF"];
+ planner [label="LLM agent", fillcolor="#DEDAF8"];
+ func [label="EXCESSIVE FUNCTIONALITY\nUnrelated SQL/debug tools", fillcolor="#FFDFDF", color="#B52525"];
+ perms [label="EXCESSIVE PERMISSIONS\nOther user's records", fillcolor="#FFDFDF", color="#B52525"];
+ auto [label="EXCESSIVE AUTONOMY\nCancels without approval", fillcolor="#FFDFDF", color="#B52525"];
+ fix [label="Mitigate:\nleast privilege + authz + HITL", fillcolor="#CFF3DF"];
+ input -> planner; planner -> func; planner -> perms; planner -> auto;
+ func -> fix; perms -> fix; auto -> fix;
+
+}

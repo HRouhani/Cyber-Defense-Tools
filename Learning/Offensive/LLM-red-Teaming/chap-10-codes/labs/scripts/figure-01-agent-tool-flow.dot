@@ -1,0 +1,18 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad=.28, nodesep=.48, ranksep=.65,
+        fontname="DejaVu Sans", fontsize=21, label="Figure 10.1 — Agent tool-call flow", labelloc=t,
+        labeljust=c, splines=ortho];
+ node [fontname="DejaVu Sans", fontsize=12, shape=box, style="filled,rounded", penwidth=1.6, color="#26466C", fillcolor="#E8F0FC", margin=".22,.15"];
+ edge [color="#26466C", penwidth=2, arrowsize=.8];
+ 
+ user [label="User request", fillcolor="#DCEEFF"];
+ model [label="LLM / planner\nproposes tool + args", fillcolor="#DEDAF8"];
+ broker [label="Policy / authorization\nTOOL BOUNDARY", fillcolor="#FDE7B5"];
+ tool [label="Tool code\n(e.g., list_pets)", fillcolor="#D4F4EA"];
+ data [label="Database / API\nsynthetic data", fillcolor="#DCEEFF"];
+ result [label="Tool result / response", fillcolor="#D4F4EA"];
+ user -> model -> broker -> tool -> data -> result;
+ broker -> deny [label="deny", color="#B52525", fontcolor="#B52525"];
+ deny [label="Reject request", fillcolor="#FFDFDF", color="#B52525"];
+
+}

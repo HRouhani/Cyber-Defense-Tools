@@ -1,0 +1,17 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad=.28, nodesep=.48, ranksep=.65,
+        fontname="DejaVu Sans", fontsize=21, label="Figure 10.4 — Cross-agent trust and human approval", labelloc=t,
+        labeljust=c, splines=ortho];
+ node [fontname="DejaVu Sans", fontsize=12, shape=box, style="filled,rounded", penwidth=1.6, color="#26466C", fillcolor="#E8F0FC", margin=".22,.15"];
+ edge [color="#26466C", penwidth=2, arrowsize=.8];
+ 
+ doc [label="Untrusted policy document\ncontains tool instructions", fillcolor="#FFDFDF", color="#B52525"];
+ support [label="SupportAgent\nretrieves document", fillcolor="#DEDAF8"];
+ check [label="Independent policy\n+ authorization", fillcolor="#FFE9B8"];
+ billing [label="BillingAgent\nrefund tool", fillcolor="#DCEEFF"];
+ approve [label="Human approval\nfor impactful action", fillcolor="#CFF3DF"];
+ blocked [label="Blocked if no approval", fillcolor="#FFDFDF", color="#B52525"];
+ doc -> support -> check -> approve -> billing;
+ check -> blocked [label="deny", color="#B52525"];
+
+}

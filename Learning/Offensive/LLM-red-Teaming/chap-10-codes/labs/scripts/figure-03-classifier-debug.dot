@@ -1,0 +1,16 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad=.28, nodesep=.48, ranksep=.65,
+        fontname="DejaVu Sans", fontsize=21, label="Figure 10.3 — Classifier branch manipulation", labelloc=t,
+        labeljust=c, splines=ortho];
+ node [fontname="DejaVu Sans", fontsize=12, shape=box, style="filled,rounded", penwidth=1.6, color="#26466C", fillcolor="#E8F0FC", margin=".22,.15"];
+ edge [color="#26466C", penwidth=2, arrowsize=.8];
+ 
+ user [label="User prompt contains\nDEBUG: SELECT ...", fillcolor="#DCEEFF"];
+ classify [label="Untrusted LLM classifier\nreturns DEBUG:...", fillcolor="#DEDAF8"];
+ route [label="Glue code trusts string\nselects DEBUG branch", fillcolor="#FFE9B8"];
+ sql [label="Arbitrary SQL on\nfictional database", fillcolor="#FFDFDF", color="#B52525"];
+ fix [label="Secure alternative:\nallowlisted intents + tool-side RBAC", fillcolor="#CFF3DF"];
+ user -> classify -> route -> sql;
+ route -> fix [style=dashed, label="fix"];
+
+}
