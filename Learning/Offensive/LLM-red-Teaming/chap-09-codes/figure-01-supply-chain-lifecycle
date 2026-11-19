@@ -1,0 +1,21 @@
+digraph "figure-01" {
+	bgcolor=white fontcolor="#0D274D" fontname="DejaVu Sans" fontsize=22 label="Figure 9.1 — LLM Supply Chain Lifecycle and Trust Boundaries" labelloc=t nodesep=0.32 pad=0.3 rankdir=LR ranksep=0.60
+	edge [arrowsize=0.8 color="#25496A" fontname="DejaVu Sans" fontsize=10 penwidth=2]
+	source [label="Model / data
+source" color="#20355E" fillcolor="#DDEBFE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	review [label="Review &
+provenance gate" color="#20355E" fillcolor="#C6F1D6" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	train [label="Training /
+fine-tuning" color="#20355E" fillcolor="#E7DBFE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	registry [label="Internal model
+registry" color="#20355E" fillcolor="#DDEBFE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	deploy [label="Deployment
+& inference" color="#20355E" fillcolor="#D7F0FA" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	tools [label="Tools / MCP
+& external data" color="#20355E" fillcolor="#FFDDB5" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	source -> review
+	review -> train
+	train -> registry
+	registry -> deploy
+	tools -> deploy [label="runtime inputs"]
+}

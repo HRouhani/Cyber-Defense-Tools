@@ -1,0 +1,25 @@
+digraph "figure-03" {
+	bgcolor=white fontcolor="#0D274D" fontname="DejaVu Sans" fontsize=22 label="Figure 9.3 — Model, Adapter, Tokenizer and Loader Risks" labelloc=t nodesep=0.32 pad=0.3 rankdir=LR ranksep=0.60
+	edge [arrowsize=0.8 color="#25496A" fontname="DejaVu Sans" fontsize=10 penwidth=2]
+	base [label="Base model
+weights" color="#20355E" fillcolor="#DDEBFE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	adapter [label="LoRA / QLoRA
+adapter" color="#20355E" fillcolor="#F7DEFD" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	tokenizer [label="Tokenizer
+configuration" color="#20355E" fillcolor="#F7DEFD" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	merge [label="Merge &
+serialization" color="#20355E" fillcolor="#E7DBFE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	loader [label="Model loader
+(pickle vs safe)" color="#20355E" fillcolor="#FEDADA" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	runtime [label="Inference
+runtime" color="#20355E" fillcolor="#D2F4DE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	check [label="Integrity checks
+& artifact scanning" color="#20355E" fillcolor="#FFF0CE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+	base -> merge
+	adapter -> merge
+	merge -> loader
+	tokenizer -> runtime
+	loader -> runtime
+	check -> loader [label=approval]
+	check -> tokenizer [label="diff / hash"]
+}

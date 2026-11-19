@@ -1,0 +1,4 @@
+# Install only for optional REAL Ollama/MCP and model artifact exercises.
+# Basic CLI demos require Python standard library only.
+requests
+mcp

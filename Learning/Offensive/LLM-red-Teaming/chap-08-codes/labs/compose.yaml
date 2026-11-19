@@ -1,0 +1,77 @@
+name: llm-output-lab
+services:
+  gateway:
+    image: nginx:stable-alpine
+    ports:
+      - "127.0.0.1:8508:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+    networks:
+      - lab-net
+      - host-ingress
+    mem_limit: 128m
+    pids_limit: 64
+  web:
+    build: .
+    expose: ["8508"]
+    environment:
+      OLLAMA_URL: "http://ollama:11434"
+      LAB_MODEL: "llama3.2:1b"
+      LAB_HOST: "127.0.0.1"
+    depends_on:
+      - public-service
+      - internal
+      - ollama
+    networks:
+      - lab-net
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    mem_limit: 512m
+    pids_limit: 128
+  internal:
+    build: .
+    command: ["python", "internal_service.py"]
+    expose: ["8765"]
+    networks: [lab-net]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    mem_limit: 128m
+    pids_limit: 64
+  public-service:
+    build: .
+    command: ["python", "public_service.py"]
+    expose: ["8766"]
+    networks: [lab-net]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    mem_limit: 128m
+    pids_limit: 64
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama
+    expose: ["11434"]
+    networks:
+      - lab-net
+      - model-download
+    mem_limit: 5g
+    pids_limit: 512
+volumes:
+  ollama-models:
+networks:
+  lab-net:
+    driver: bridge
+    internal: true
+  model-download:
+    driver: bridge
+  host-ingress:
+    driver: bridge

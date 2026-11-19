@@ -1,0 +1,34 @@
+digraph "figure-02" {
+	bgcolor=white fontcolor="#0D274D" fontname="DejaVu Sans" fontsize=22 label="Figure 9.2 — Split-View vs Front-Running vs RAG Poisoning" labelloc=t nodesep=0.32 pad=0.3 rankdir=LR ranksep=0.60
+	edge [arrowsize=0.8 color="#25496A" fontname="DejaVu Sans" fontsize=10 penwidth=2]
+	subgraph cluster_split {
+		color="#E97A74" label="Split-view (source changes after recommendation)" style=rounded
+		s1 [label=Snapshot color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		s2 [label="Link / reference" color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		s3 [label="Modified package" color="#20355E" fillcolor="#FDE4E2" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		s4 [label="User executes" color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		s1 -> s2
+		s2 -> s3
+		s3 -> s4
+	}
+	subgraph cluster_front {
+		color="#DBA63A" label="Front-running (poison before scheduled update)" style=rounded
+		f1 [label="Editable source" color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		f2 [label="Poisoned dataset" color="#20355E" fillcolor="#FFF1CE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		f3 [label="Fine-tune" color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		f4 [label="Updated behavior" color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		f1 -> f2
+		f2 -> f3
+		f3 -> f4
+	}
+	subgraph cluster_rag {
+		color="#7B61B8" label="RAG (poison live retrieved context)" style=rounded
+		r1 [label="Editable document" color="#20355E" fillcolor="#F6DEFD" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		r2 [label=Retriever color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		r3 [label="LLM context" color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		r4 [label=Answer color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		r1 -> r2
+		r2 -> r3
+		r3 -> r4
+	}
+}

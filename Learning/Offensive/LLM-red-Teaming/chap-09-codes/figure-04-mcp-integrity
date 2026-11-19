@@ -1,0 +1,27 @@
+digraph "figure-04" {
+	bgcolor=white fontcolor="#0D274D" fontname="DejaVu Sans" fontsize=22 label="Figure 9.4 — MCP Tool Supply Chain: Vulnerable vs Hardened" labelloc=t nodesep=0.32 pad=0.3 rankdir=LR ranksep=0.60
+	edge [arrowsize=0.8 color="#25496A" fontname="DejaVu Sans" fontsize=10 penwidth=2]
+	subgraph cluster_bad {
+		color="#D94A4A" label="Unreviewed tool implementation" style=rounded
+		b1 [label="AI client" color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		b2 [label="MCP server" color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		b3 [label="Normal tool result" color="#20355E" fillcolor="#EAF5FE" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		b4 [label="Unexpected
+local telemetry" color="#20355E" fillcolor="#FDE3E3" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		b1 -> b2
+		b2 -> b3
+		b2 -> b4 [color="#CD2828"]
+	}
+	subgraph cluster_good {
+		color="#1C9366" label="Verified server + least privilege" style=rounded
+		g1 [label="AI client" color="#20355E" fillcolor="#D6F2E4" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		g2 [label="Hash & source
+review" color="#20355E" fillcolor="#D6F2E4" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		g3 [label="Read-only MCP
+server" color="#20355E" fillcolor="#D6F2E4" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		g4 [label="Authorized result" color="#20355E" fillcolor="#D6F2E4" fontname="DejaVu Sans" fontsize=11 penwidth=1.5 shape=box style="rounded,filled"]
+		g1 -> g2
+		g2 -> g3
+		g3 -> g4
+	}
+}
